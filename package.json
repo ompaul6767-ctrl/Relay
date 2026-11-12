@@ -1,0 +1,23 @@
+{
+  "name": "relay-monorepo",
+  "version": "1.0.0",
+  "description": "Relay - Evidence-linked knowledge handover platform",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "npm --prefix server run dev",
+    "build": "npm --prefix client run build && npm --prefix server run build",
+    "start": "npm --prefix server start",
+    "test": "npm --prefix server test",
+    "evaluate": "node server/scripts/evaluate.js",
+    "seed": "node server/scripts/seed.js"
+  },
+  "keywords": ["handover", "knowledge-management", "compliance", "ai-verification", "gemini"],
+  "author": "Tech Force",
+  "license": "MIT"
+}

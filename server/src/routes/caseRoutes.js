@@ -1,0 +1,480 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import { createCaseSchema, acknowledgeSchema, askQuestionSchema } from './validators.js';
+import { authMiddleware, requireLead } from '../middleware/auth.js';
+import { Case } from '../models/Case.js';
+import { Source } from '../models/Source.js';
+import { Span } from '../models/Span.js';
+import { Claim } from '../models/Claim.js';
+import { Version } from '../models/Version.js';
+import { Acknowledgement } from '../models/Acknowledgement.js';
+import { Audit, logAudit } from '../models/Audit.js';
+import { runReconstructionPipeline } from '../services/verification/engine.js';
+import { env } from '../config/environment.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const router = express.Router();
+
+/**
+ * GET /api/cases
+ * Returns all cases with progress and status metadata
+ */
+router.get('/', authMiddleware, async (req, res, next) => {
+  try {
+    const cases = await Case.find().sort({ updatedAt: -1 }).lean();
+
+    // Attach counts for each case
+    const casesWithStats = await Promise.all(
+      cases.map(async (c) => {
+        const sourceCount = await Source.countDocuments({ caseId: c._id });
+        const claimCount = await Claim.countDocuments({ caseId: c._id });
+        const approvedCount = await Claim.countDocuments({ caseId: c._id, reviewDecision: 'approved' });
+        const pendingCount = await Claim.countDocuments({ caseId: c._id, reviewDecision: 'pending' });
+
+        return {
+          ...c,
+          stats: {
+            sourceCount,
+            claimCount,
+            approvedCount,
+            pendingCount,
+          },
+        };
+      })
+    );
+
+    return res.json({ cases: casesWithStats });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/cases
+ * Creates a new handover case
+ */
+router.post('/', authMiddleware, async (req, res, next) => {
+  try {
+    const parse = createCaseSchema.safeParse(req.body);
+    if (!parse.success) {
+      return res.status(400).json({ error: 'Validation failed', details: parse.error.flatten().fieldErrors });
+    }
+
+    const { title, departingMemberName } = parse.data;
+    const newCase = await Case.create({
+      title,
+      departingMemberName,
+      status: 'draft',
+      createdBy: req.user.name,
+    });
+
+    await logAudit({
+      caseId: newCase._id,
+      actor: req.user.name,
+      role: req.user.role,
+      action: 'create_case',
+      targetId: String(newCase._id),
+      metadata: { title, departingMemberName },
+    });
+
+    return res.status(201).json({ success: true, case: newCase });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/cases/:id
+ * Returns a specific case
+ */
+router.get('/:id', authMiddleware, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(caseId)) {
+      return res.status(400).json({ error: 'Invalid case ID' });
+    }
+
+    const foundCase = await Case.findById(caseId).lean();
+    if (!foundCase) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const sourceCount = await Source.countDocuments({ caseId });
+    const claims = await Claim.find({ caseId }).lean();
+
+    const allowedAcls = req.user.allowedAcls || ['team'];
+    const visibleClaims = claims.filter((c) => allowedAcls.includes(c.acl));
+
+    return res.json({
+      case: foundCase,
+      stats: {
+        sourceCount,
+        claimCount: visibleClaims.length,
+        approvedCount: visibleClaims.filter((c) => c.reviewDecision === 'approved').length,
+        pendingCount: visibleClaims.filter((c) => c.reviewDecision === 'pending').length,
+        conflictsCount: visibleClaims.filter((c) => c.status === 'Conflicting').length,
+        gapsCount: visibleClaims.filter((c) => c.status === 'Missing').length,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/cases/:id/reconstruct
+ * Runs extraction & verification pipeline on all spans for this case.
+ */
+router.post('/:id/reconstruct', authMiddleware, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    const foundCase = await Case.findById(caseId);
+    if (!foundCase) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    // Retrieve all spans for this case
+    const spans = await Span.find({ caseId }).lean();
+    if (spans.length === 0) {
+      return res.status(400).json({
+        error: 'No sources found',
+        message: 'Please connect and upload sources before running reconstruction.',
+      });
+    }
+
+    // Include restricted spans in extraction only if user is lead
+    const isLead = req.user.role === 'lead';
+
+    const pipelineResult = await runReconstructionPipeline({
+      spans,
+      departingMember: foundCase.departingMemberName,
+      includeRestricted: isLead,
+    });
+
+    // Remove existing claims for this case to rebuild fresh state
+    await Claim.deleteMany({ caseId });
+
+    // Insert newly extracted & verified claims
+    const claimsToInsert = pipelineResult.claims.map((c) => ({
+      ...c,
+      caseId,
+    }));
+
+    const insertedClaims = await Claim.insertMany(claimsToInsert);
+
+    // Update case status to in_review if it was draft
+    if (foundCase.status === 'draft') {
+      foundCase.status = 'in_review';
+      await foundCase.save();
+    }
+
+    await logAudit({
+      caseId,
+      actor: req.user.name,
+      role: req.user.role,
+      action: 'reconstruct',
+      targetId: String(caseId),
+      metadata: {
+        totalExtracted: insertedClaims.length,
+        usedFallback: pipelineResult.usedFallback,
+        conflictsCount: pipelineResult.summary.conflictsCount,
+        gapsCount: pipelineResult.summary.gapsCount,
+      },
+    });
+
+    return res.json({
+      success: true,
+      summary: pipelineResult.summary,
+      usedFallback: pipelineResult.usedFallback,
+      bannerMessage: pipelineResult.bannerMessage,
+      claimsCount: insertedClaims.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/cases/:id/publish
+ * Publishes approved claims as a new immutable version.
+ * Requires Lead role.
+ */
+router.post('/:id/publish', authMiddleware, requireLead, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    const foundCase = await Case.findById(caseId);
+    if (!foundCase) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    // Fetch all currently approved claims
+    const approvedClaims = await Claim.find({
+      caseId,
+      reviewDecision: 'approved',
+    }).lean();
+
+    if (approvedClaims.length === 0) {
+      return res.status(400).json({
+        error: 'No approved claims',
+        message: 'You cannot publish an empty handover. Approve at least one verified or attested claim first.',
+      });
+    }
+
+    // Calculate next version number
+    const latestVersion = await Version.findOne({ caseId }).sort({ number: -1 }).lean();
+    const nextNumber = latestVersion ? latestVersion.number + 1 : 1;
+
+    // Calculate diff from previous version
+    let diff = { added: approvedClaims.length, modified: 0, removed: 0, details: [] };
+    if (latestVersion && latestVersion.approvedClaimSnapshot) {
+      const prevIds = new Set(latestVersion.approvedClaimSnapshot.map((c) => String(c._id)));
+      const currIds = new Set(approvedClaims.map((c) => String(c._id)));
+
+      let added = 0;
+      let removed = 0;
+      let modified = 0;
+
+      for (const curr of approvedClaims) {
+        if (!prevIds.has(String(curr._id))) {
+          added++;
+        } else {
+          // Check if modified
+          const prev = latestVersion.approvedClaimSnapshot.find((p) => String(p._id) === String(curr._id));
+          if (prev && (prev.value !== curr.value || prev.text !== curr.text)) {
+            modified++;
+          }
+        }
+      }
+
+      for (const prev of latestVersion.approvedClaimSnapshot) {
+        if (!currIds.has(String(prev._id))) {
+          removed++;
+        }
+      }
+
+      diff = { added, modified, removed, details: [] };
+    }
+
+    const versionDoc = await Version.create({
+      caseId,
+      number: nextNumber,
+      approvedClaimSnapshot: approvedClaims,
+      publishedBy: req.user.name,
+      publishedAt: new Date(),
+      diffFromPrevious: diff,
+    });
+
+    foundCase.status = 'published';
+    foundCase.currentVersion = nextNumber;
+    await foundCase.save();
+
+    await logAudit({
+      caseId,
+      actor: req.user.name,
+      role: req.user.role,
+      action: 'publish_version',
+      targetId: String(versionDoc._id),
+      metadata: {
+        versionNumber: nextNumber,
+        claimsCount: approvedClaims.length,
+        diff,
+      },
+    });
+
+    return res.json({
+      success: true,
+      version: versionDoc,
+      message: `Version ${nextNumber} published successfully with ${approvedClaims.length} approved claims.`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/cases/:id/versions
+ * Returns version history for the case
+ */
+router.get('/:id/versions', authMiddleware, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    const versions = await Version.find({ caseId }).sort({ number: -1 }).lean();
+
+    // Sanitize snapshots for incoming users (never leak restricted claims inside snapshots)
+    const allowedAcls = req.user.allowedAcls || ['team'];
+    const sanitizedVersions = versions.map((v) => {
+      const filteredSnapshot = (v.approvedClaimSnapshot || []).filter((c) => allowedAcls.includes(c.acl));
+      return {
+        ...v,
+        approvedClaimSnapshot: filteredSnapshot,
+        claimCount: filteredSnapshot.length,
+      };
+    });
+
+    return res.json({ versions: sanitizedVersions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/cases/:id/audit
+ * Returns audit trail logs for this case (strictly caseId filtered, no restricted content in logs)
+ */
+router.get('/:id/audit', authMiddleware, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    const logs = await Audit.find({ caseId }).sort({ timestamp: -1 }).limit(100).lean();
+
+    return res.json({ audit: logs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/cases/:id/acknowledge
+ * Incoming recipient acknowledges receipt of a specific version and can raise questions to lead.
+ */
+router.post('/:id/acknowledge', authMiddleware, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    const parse = acknowledgeSchema.safeParse(req.body);
+    if (!parse.success) {
+      return res.status(400).json({ error: 'Validation failed', details: parse.error.flatten().fieldErrors });
+    }
+
+    const { versionNumber, question } = parse.data;
+
+    const questionsList = [];
+    if (question && question.trim()) {
+      questionsList.push({
+        text: question.trim(),
+        createdAt: new Date(),
+      });
+    }
+
+    const ack = await Acknowledgement.create({
+      caseId,
+      versionNumber,
+      userId: String(req.user.id || req.user._id),
+      userName: req.user.name,
+      userRole: req.user.role,
+      acknowledgedAt: new Date(),
+      questionsRaised: questionsList,
+    });
+
+    await logAudit({
+      caseId,
+      actor: req.user.name,
+      role: req.user.role,
+      action: 'acknowledge_receipt',
+      targetId: String(ack._id),
+      metadata: {
+        versionNumber,
+        hasQuestion: Boolean(question),
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      acknowledgement: ack,
+      message: `Handover version ${versionNumber} successfully acknowledged by ${req.user.name}.`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/cases/:id/ask (Stretch feature)
+ * Answers questions cited ONLY from approved claims that the viewer has permission to see.
+ */
+router.post('/:id/ask', authMiddleware, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    const parse = askQuestionSchema.safeParse(req.body);
+    if (!parse.success) {
+      return res.status(400).json({ error: 'Validation failed', details: parse.error.flatten().fieldErrors });
+    }
+
+    const { question } = parse.data;
+    const allowedAcls = req.user.allowedAcls || ['team'];
+
+    // Retrieve ONLY approved claims that match viewer's ACL
+    const visibleApprovedClaims = await Claim.find({
+      caseId,
+      reviewDecision: 'approved',
+      acl: { $in: allowedAcls },
+    }).lean();
+
+    if (visibleApprovedClaims.length === 0) {
+      return res.json({
+        answer: 'No approved claims are currently available to answer this question. Please ensure claims have been reviewed and published.',
+        citations: [],
+      });
+    }
+
+    // Try Gemini if available
+    if (env.GEMINI_API_KEY) {
+      try {
+        const client = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+        const model = client.getGenerativeModel({ model: env.GEMINI_MODEL || 'gemini-2.5-flash' });
+
+        const prompt = `You are a strict Q&A assistant for software handovers.
+Answer the question using ONLY the provided verified claims.
+Do not invent facts or use outside knowledge. If the provided claims do not answer the question, state that clearly.
+For every factual point in your answer, cite the Claim ID [Claim X].
+
+User Question: "${question}"
+
+Available Permitted Claims:
+${visibleApprovedClaims.map((c, i) => `[Claim ${i + 1}] (Type: ${c.type}): ${c.text}`).join('\n')}
+
+Format your response as JSON:
+{
+  "answer": "string",
+  "citedClaimIndexes": [1, 2]
+}`;
+
+        const result = await model.generateContent(prompt);
+        const parsed = JSON.parse(result.response.text());
+
+        const citations = (parsed.citedClaimIndexes || [])
+          .map((idx) => visibleApprovedClaims[idx - 1])
+          .filter(Boolean);
+
+        return res.json({
+          answer: parsed.answer,
+          citations,
+        });
+      } catch (err) {
+        console.warn('[Q&A] Gemini failed, using deterministic keyword search:', err.message);
+      }
+    }
+
+    // Deterministic fallback search
+    const lowerQ = question.toLowerCase();
+    const matchingClaims = visibleApprovedClaims.filter((c) => {
+      const words = lowerQ.split(/\s+/).filter((w) => w.length > 3);
+      return words.some((w) => c.text.toLowerCase().includes(w));
+    });
+
+    if (matchingClaims.length === 0) {
+      return res.json({
+        answer: `I could not find an approved claim answering "${question}" within your permitted access scope.`,
+        citations: [],
+      });
+    }
+
+    const answer = `Based on ${matchingClaims.length} approved claim(s):\n${matchingClaims.map((c) => `• ${c.text}`).join('\n')}`;
+    return res.json({
+      answer,
+      citations: matchingClaims,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;

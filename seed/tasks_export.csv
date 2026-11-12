@@ -1,0 +1,9 @@
+id,task,owner,status,due
+TASK-101,Core Student OAuth Login,Aarav,done,2026-09-10
+TASK-102,Payment Gateway Integration,Aarav,in_progress,2026-10-15
+TASK-103,Event Ticketing QR Code Generator,Aarav,done,2026-09-25
+TASK-104,Figma Design System & Mobile Tokens,Rohan,done,2026-09-15
+TASK-105,Event Banner & Poster Assets Catalog,Rohan,in_progress,2026-10-25
+TASK-106,Volunteer Check-in Mobile View,Priya,in_progress,2026-10-30
+TASK-107,Redis Cache Clustering Setup,Aarav,blocked,2026-10-18
+TASK-108,Notification Service Migration,,todo,2026-11-01

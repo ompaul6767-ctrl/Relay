@@ -1,4 +1,15 @@
-const API_BASE = '/api';
+// Support optional VITE_API_URL environment variable, defaulting to relative '/api'
+// In production on Vercel, requests to '/api/*' are proxied to Render via vercel.json rewrites
+const getApiBase = (): string => {
+  const envUrl = ((import.meta as any).env?.VITE_API_URL as string | undefined)?.trim();
+  if (!envUrl) {
+    return '/api';
+  }
+  const cleanUrl = envUrl.replace(/\/+$/, '');
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+};
+
+const API_BASE = getApiBase();
 
 export async function apiRequest<T = any>(
   endpoint: string,
@@ -20,15 +31,27 @@ export async function apiRequest<T = any>(
     delete headers['Content-Type'];
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  const response = await fetch(`${API_BASE}${normalizedEndpoint}`, {
     ...options,
     headers,
   });
 
-  const data = await response.json().catch(() => ({}));
+  let data: any = {};
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
-    const errorMsg = data.message || data.error || `HTTP error ${response.status}`;
+    const errorMsg =
+      data.message ||
+      data.error ||
+      (response.status === 502 || response.status === 503 || response.status === 504
+        ? 'Backend service is temporarily unavailable or waking up. Please retry in a few moments.'
+        : `HTTP error ${response.status}`);
     const err = new Error(errorMsg);
     (err as any).status = response.status;
     (err as any).details = data.details;

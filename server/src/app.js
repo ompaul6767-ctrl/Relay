@@ -72,13 +72,16 @@ app.use('/api/cases', caseRoutes);
 app.use('/api/demo', demoRoutes);
 
 // In production, serve built client files if present
-const clientDistPath = path.resolve(__dirname, '../../../client/dist');
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
 if (fs.existsSync(clientDistPath)) {
+  console.log(`[Relay] Serving static frontend from: ${clientDistPath}`);
   app.use(express.static(clientDistPath));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
+} else {
+  console.log(`[Relay] No static frontend found at: ${clientDistPath}. API-only mode active.`);
 }
 
 // 404 Handler for API

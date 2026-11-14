@@ -7,25 +7,25 @@
 const SECRET_PATTERNS = [
   // Google API Key (AIza...)
   {
-    regex: /AIza[0-9A-Za-z-_]{35}/g,
+    regex: /\bAIza[0-9A-Za-z-_]{30,45}\b/g,
     placeholder: '[API_KEY_MASKED]',
     type: 'google_api_key',
   },
   // OpenAI API Key (sk-...)
   {
-    regex: /sk-[a-zA-Z0-9_-]{20,}/g,
+    regex: /\bsk-[a-zA-Z0-9_-]{20,}\b/g,
     placeholder: '[API_KEY_MASKED]',
     type: 'openai_api_key',
   },
   // GitHub Personal Access Token (ghp_...)
   {
-    regex: /ghp_[a-zA-Z0-9]{36}/g,
+    regex: /\bghp_[a-zA-Z0-9]{36}\b/g,
     placeholder: '[API_KEY_MASKED]',
     type: 'github_token',
   },
   // AWS Access Key ID
   {
-    regex: /AKIA[0-9A-Z]{16}/g,
+    regex: /\bAKIA[0-9A-Z]{16}\b/g,
     placeholder: '[AWS_KEY_MASKED]',
     type: 'aws_key',
   },
@@ -41,9 +41,9 @@ const SECRET_PATTERNS = [
     placeholder: '[CREDIT_CARD_MASKED]',
     type: 'credit_card',
   },
-  // Phone numbers (e.g. +1 (555) 123-4567, 555-123-4567, etc.)
+  // Phone numbers (with strict word boundary)
   {
-    regex: /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+    regex: /\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
     placeholder: '[PHONE_MASKED]',
     type: 'phone_number',
   },

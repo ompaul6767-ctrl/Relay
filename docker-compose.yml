@@ -1,0 +1,13 @@
+services:
+  relay:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - JWT_SECRET=relay-super-secret-jwt-key-hackathon-2026
+      - MONGODB_URI=${MONGODB_URI:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.8-flash}
+    restart: unless-stopped

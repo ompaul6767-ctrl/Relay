@@ -76,7 +76,7 @@ flowchart TD
 - **Frontend:** React 18 with Vite, Tailwind CSS, React Router v6, Lucide React icons, TypeScript.
 - **Backend:** Node.js with Express, JWT authentication, role & ACL middleware, Zod request validation, Helmet HTTP headers, express-rate-limit, Multer.
 - **Database:** MongoDB (supports MongoDB Atlas via `MONGODB_URI` and automatic in-memory `mongodb-memory-server` fallback for instant zero-configuration local runs).
-- **AI Engine:** Google Gemini API (`gemini-2.5-flash`) with strict JSON schema mode and temperature 0.1.
+- **AI Engine:** Google Gemini API (`gemini-3.8-flash` / `gemini-2.5-flash`) with strict JSON schema mode and temperature 0.1.
 - **Deterministic Fallback:** Robust deterministic rule extractor and citation validator that activates automatically if `GEMINI_API_KEY` is missing or quota is exhausted, displaying an honest banner in the UI.
 - **Testing:** Vitest and Supertest for unit, API, and security test suites.
 
@@ -117,24 +117,30 @@ cp .env.example .env
 
 ### Running the Application
 
-#### Option A: Production Build (Frontend + Backend on Single Port)
+#### Option A: Unified Production Mode (Frontend + Backend on Single Port)
 ```bash
 # 1. Build the frontend client into client/dist
-npm --prefix client run build
+npm run build
 
-# 2. Start the backend server (serves both API and frontend on http://localhost:5000)
-npm --prefix server start
+# 2. Start the unified server (serves both API and SPA on http://localhost:5000)
+npm start
 ```
 Open **[http://localhost:5000](http://localhost:5000)** in any modern browser.
 
-#### Option B: Development Mode (Hot Reload)
+#### Option B: Docker Container (1-Command Run)
+```bash
+docker compose up --build
+```
+Open **[http://localhost:5000](http://localhost:5000)**. See [docs/deployment.md](docs/deployment.md) for Render/Railway 1-click cloud deployment.
+
+#### Option C: Development Mode (Hot Reload)
 In two separate terminal tabs:
 ```bash
 # Terminal 1: Backend API
-cd server && npm run dev
+npm run dev:server
 
 # Terminal 2: Frontend Vite Dev Server
-cd client && npm run dev
+npm run dev:client
 ```
 Open **[http://localhost:5173](http://localhost:5173)**.
 

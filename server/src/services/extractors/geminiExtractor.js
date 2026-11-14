@@ -83,7 +83,12 @@ Output strict JSON with this exact schema:
 
     const prompt = `${systemPrompt}\n\nProject Spans to analyze:\n${JSON.stringify(spansPayload, null, 2)}`;
 
-    const result = await model.generateContent(prompt);
+    // 6-second timeout race to guarantee responsive fallback if API experiences high demand spikes
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini API call timed out (high network latency or API demand spike)')), 6000)
+    );
+
+    const result = await Promise.race([model.generateContent(prompt), timeoutPromise]);
     const responseText = result.response.text();
     const parsed = JSON.parse(responseText);
 

@@ -3,6 +3,7 @@ import { env } from '../../config/environment.js';
 import { normaliseWhitespace } from './quoteVerifier.js';
 
 let geminiClient = null;
+let aiTemporarilyUnavailable = false;
 if (env.GEMINI_API_KEY) {
   try {
     geminiClient = new GoogleGenerativeAI(env.GEMINI_API_KEY);
@@ -20,11 +21,11 @@ export async function checkSupport({ claimText, quotes, spanTexts }) {
     return { verdict: 'partial', reasoning: 'No direct quotes available for support verification', usedAi: false };
   }
 
-  // If Gemini API is available, perform second-pass AI verification
-  if (geminiClient && env.GEMINI_API_KEY) {
+  // If Gemini API is available and hasn't experienced high demand/timeout, perform second-pass AI verification
+  if (geminiClient && env.GEMINI_API_KEY && !aiTemporarilyUnavailable) {
     try {
       const model = geminiClient.getGenerativeModel({
-        model: env.GEMINI_MODEL || 'gemini-2.5-flash',
+        model: env.GEMINI_MODEL || 'gemini-3.8-flash',
         generationConfig: {
           temperature: 0.1,
           responseMimeType: 'application/json',
@@ -49,7 +50,11 @@ Rules:
 - "partial": The quote relates to the claim but requires slight extrapolation.
 - "no": The quote contradicts or completely fails to support the claim.`;
 
-      const result = await model.generateContent(prompt);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Support check timed out')), 5000)
+      );
+
+      const result = await Promise.race([model.generateContent(prompt), timeoutPromise]);
       const responseText = result.response.text();
       const parsed = JSON.parse(responseText);
 
@@ -61,7 +66,8 @@ Rules:
         };
       }
     } catch (aiErr) {
-      console.warn('[SupportChecker] Gemini call failed or quota reached, using deterministic rule fallback:', aiErr.message);
+      aiTemporarilyUnavailable = true;
+      console.warn('[SupportChecker] Gemini call failed or quota reached, using deterministic rule fallback for subsequent checks:', aiErr.message);
     }
   }
 

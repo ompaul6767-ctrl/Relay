@@ -10,8 +10,12 @@ export async function connectDB() {
 
   let uri = env.MONGODB_URI;
 
-  if (!uri) {
-    console.log('[Database] No MONGODB_URI provided. Initializing in-memory MongoDB instance...');
+  if (!uri || uri.includes('<db_username>')) {
+    if (uri && uri.includes('<db_username>')) {
+      console.warn('[Database] Notice: MONGODB_URI contains placeholder "<db_username>". Please replace it with your Atlas database username. Falling back to embedded in-memory MongoDB for uninterrupted operation.');
+    } else {
+      console.log('[Database] No MONGODB_URI provided. Initializing in-memory MongoDB instance...');
+    }
     try {
       const { MongoMemoryServer } = await import('mongodb-memory-server');
       mongodInstance = await MongoMemoryServer.create();
@@ -19,7 +23,6 @@ export async function connectDB() {
       console.log(`[Database] In-memory MongoDB started at: ${uri}`);
     } catch (memErr) {
       console.error('[Database] Failed to start MongoMemoryServer:', memErr.message);
-      // Fallback to local default uri if memory server fails
       uri = 'mongodb://127.0.0.1:27017/relay';
     }
   }

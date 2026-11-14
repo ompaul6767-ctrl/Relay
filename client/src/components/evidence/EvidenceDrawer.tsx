@@ -109,10 +109,10 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-sm transition-opacity flex justify-end">
       <div className="relative w-full max-w-xl bg-white dark:bg-navy-900 h-full shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800 animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-navy-950">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-navy-950">
           <div className="flex items-center space-x-2">
             <FileText className="text-teal-600 dark:text-teal-400" size={20} />
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+            <h2 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
               Evidence & Citation Inspection
             </h2>
           </div>
@@ -126,7 +126,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Claim Summary Card */}
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-navy-950/40 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">

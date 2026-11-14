@@ -26,6 +26,7 @@ import {
   Sparkles,
   Layers,
   Filter,
+  ChevronLeft,
 } from 'lucide-react';
 
 export const ReviewPage: React.FC = () => {
@@ -40,6 +41,7 @@ export const ReviewPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [publishing, setPublishing] = useState<boolean>(false);
   const [bulkApproving, setBulkApproving] = useState<boolean>(false);
+  const [mobileReviewView, setMobileReviewView] = useState<'list' | 'detail'>('list');
 
   // Filters
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -277,8 +279,34 @@ export const ReviewPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile View Switcher (Visible only on < lg) */}
+      <div className="lg:hidden flex p-1 rounded-xl bg-slate-200 dark:bg-slate-800 text-xs font-semibold">
+        <button
+          type="button"
+          onClick={() => setMobileReviewView('list')}
+          className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+            mobileReviewView === 'list'
+              ? 'bg-white dark:bg-navy-900 text-teal-700 dark:text-teal-300 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+          }`}
+        >
+          Claims List ({claims.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileReviewView('detail')}
+          className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+            mobileReviewView === 'detail'
+              ? 'bg-white dark:bg-navy-900 text-teal-700 dark:text-teal-300 shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+          }`}
+        >
+          Detail & Evidence {selectedClaim ? `• ${selectedClaim.type}` : ''}
+        </button>
+      </div>
+
       {/* Filter Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 p-3 bg-white dark:bg-navy-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 bg-white dark:bg-navy-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
         <div className="flex items-center space-x-1.5 text-slate-500 font-semibold pr-2 border-r border-slate-200 dark:border-slate-800">
           <Filter size={14} />
           <span>Filters:</span>
@@ -288,7 +316,7 @@ export const ReviewPage: React.FC = () => {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-navy-950 font-medium"
+          className="flex-1 sm:flex-initial min-w-[130px] px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-navy-950 font-medium"
         >
           <option value="all">All Statuses ({claims.length})</option>
           <option value="Verified">Verified Only</option>
@@ -302,7 +330,7 @@ export const ReviewPage: React.FC = () => {
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-navy-950 font-medium"
+          className="flex-1 sm:flex-initial min-w-[110px] px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-navy-950 font-medium"
         >
           <option value="all">All Types</option>
           <option value="owner">Owner</option>
@@ -317,7 +345,7 @@ export const ReviewPage: React.FC = () => {
         <select
           value={filterDecision}
           onChange={(e) => setFilterDecision(e.target.value)}
-          className="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-navy-950 font-medium"
+          className="flex-1 sm:flex-initial min-w-[130px] px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-navy-950 font-medium"
         >
           <option value="all">All Decisions</option>
           <option value="pending">Pending Review Only ({pendingCount})</option>
@@ -325,7 +353,7 @@ export const ReviewPage: React.FC = () => {
           <option value="rejected">Rejected Only</option>
         </select>
 
-        <div className="ml-auto text-slate-400 font-mono text-[11px]">
+        <div className="w-full sm:w-auto sm:ml-auto text-slate-400 font-mono text-[11px] text-right">
           Showing {claims.length} claim(s)
         </div>
       </div>
@@ -333,7 +361,7 @@ export const ReviewPage: React.FC = () => {
       {/* Split View Review Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Claim List (5 cols) */}
-        <div className="lg:col-span-5 space-y-3 max-h-[calc(100vh-16rem)] overflow-y-auto pr-1">
+        <div className={`${mobileReviewView === 'detail' ? 'hidden lg:block' : 'block'} lg:col-span-5 space-y-3 max-h-[calc(100vh-16rem)] overflow-y-auto pr-1`}>
           {loading ? (
             <div className="p-8 text-center text-xs text-slate-400">Loading claims...</div>
           ) : claims.length === 0 ? (
@@ -348,7 +376,10 @@ export const ReviewPage: React.FC = () => {
               return (
                 <div
                   key={claim._id}
-                  onClick={() => setSelectedClaim(claim)}
+                  onClick={() => {
+                    setSelectedClaim(claim);
+                    setMobileReviewView('detail');
+                  }}
                   className={`p-4 rounded-xl border text-xs cursor-pointer transition-all ${
                     isSelected
                       ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-950/40 shadow-sm ring-1 ring-teal-500/50'
@@ -396,9 +427,19 @@ export const ReviewPage: React.FC = () => {
         </div>
 
         {/* Right Column: Evidence Panel & Verification Deep Dive (7 cols) */}
-        <div className="lg:col-span-7">
+        <div className={`${mobileReviewView === 'list' ? 'hidden lg:block' : 'block'} lg:col-span-7`}>
+          {/* Mobile Back Button */}
+          <button
+            type="button"
+            onClick={() => setMobileReviewView('list')}
+            className="lg:hidden mb-3 text-xs font-semibold text-teal-600 dark:text-teal-400 flex items-center space-x-1 p-1 hover:underline"
+          >
+            <ChevronLeft size={16} />
+            <span>← Back to Claims List</span>
+          </button>
+
           {selectedClaim ? (
-            <Card className="p-6 space-y-6 border-slate-300 dark:border-slate-800 shadow-sm sticky top-24">
+            <Card className="p-4 sm:p-6 space-y-6 border-slate-300 dark:border-slate-800 shadow-sm lg:sticky lg:top-24">
               {/* Header */}
               <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div className="space-y-1">

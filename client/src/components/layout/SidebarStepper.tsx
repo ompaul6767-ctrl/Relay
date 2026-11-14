@@ -13,12 +13,26 @@ import {
   Layers,
   ChevronRight,
   Shield,
+  X,
 } from 'lucide-react';
 
-export const SidebarStepper: React.FC = () => {
+interface SidebarStepperProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const SidebarStepper: React.FC<SidebarStepperProps> = ({
+  isOpen = false,
+  onClose,
+}) => {
   const { currentCase, activeStep, setActiveStep } = useCase();
   const { role } = useAuth();
   const location = useLocation();
+
+  const handleStepClick = (stepNum: number) => {
+    setActiveStep(stepNum);
+    if (onClose) onClose();
+  };
 
   const stats = currentCase?.stats || {
     sourceCount: 0,
@@ -82,8 +96,8 @@ export const SidebarStepper: React.FC = () => {
     },
   ];
 
-  return (
-    <aside className="w-64 flex-shrink-0 bg-white dark:bg-navy-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between min-h-[calc(100vh-4rem)]">
+  const navigationBody = (
+    <div className="flex flex-col justify-between h-full">
       <div className="p-4 space-y-6">
         {/* Core Stepper Header */}
         <div>
@@ -100,7 +114,7 @@ export const SidebarStepper: React.FC = () => {
                 <Link
                   key={st.id}
                   to={st.path}
-                  onClick={() => setActiveStep(st.step)}
+                  onClick={() => handleStepClick(st.step)}
                   className={`group flex items-center justify-between p-2.5 rounded-xl text-xs transition-all ${
                     isActive
                       ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-900 dark:text-teal-200 font-semibold shadow-sm border border-teal-200 dark:border-teal-800'
@@ -150,6 +164,7 @@ export const SidebarStepper: React.FC = () => {
 
           <Link
             to="/audit"
+            onClick={() => { if (onClose) onClose(); }}
             className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
               location.pathname === '/audit'
                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium'
@@ -165,6 +180,7 @@ export const SidebarStepper: React.FC = () => {
 
           <Link
             to="/limitations"
+            onClick={() => { if (onClose) onClose(); }}
             className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
               location.pathname === '/limitations'
                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium'
@@ -180,6 +196,7 @@ export const SidebarStepper: React.FC = () => {
 
           <Link
             to="/cases"
+            onClick={() => { if (onClose) onClose(); }}
             className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
               location.pathname === '/cases'
                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium'
@@ -205,6 +222,44 @@ export const SidebarStepper: React.FC = () => {
           Server filters restricted content before building responses. Zero client leaks.
         </p>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-navy-900 border-r border-slate-200 dark:border-slate-800 flex-col justify-between min-h-[calc(100vh-4rem)]">
+        {navigationBody}
+      </aside>
+
+      {/* Mobile Drawer (Visible when isOpen is true) */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-navy-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                Workflow Steps
+              </span>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                aria-label="Close menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {navigationBody}
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
   );
 };

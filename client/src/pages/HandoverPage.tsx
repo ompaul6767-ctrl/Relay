@@ -169,7 +169,7 @@ export const HandoverPage: React.FC = () => {
       </div>
 
       {/* Printable Document Sheet */}
-      <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-8 print:border-none print:shadow-none print:p-0">
+      <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 md:p-8 shadow-sm space-y-6 sm:space-y-8 print:border-none print:shadow-none print:p-0">
         {/* Document Title Banner */}
         <div className="border-b border-slate-200 dark:border-slate-800 pb-6 space-y-3">
           <div className="flex items-center justify-between">
@@ -181,7 +181,7 @@ export const HandoverPage: React.FC = () => {
             </span>
           </div>
 
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
             {currentCase?.title || 'Project Handover'}
           </h2>
 
@@ -458,10 +458,10 @@ export const HandoverPage: React.FC = () => {
         </section>
 
         {/* Acknowledgement of Receipt Section (Section 5.5) */}
-        <section className="p-6 rounded-2xl border-2 border-teal-500/40 bg-teal-50/40 dark:bg-teal-950/30 space-y-4 print:hidden">
-          <div className="flex items-center justify-between">
+        <section className="p-4 sm:p-6 rounded-2xl border-2 border-teal-500/40 bg-teal-50/40 dark:bg-teal-950/30 space-y-4 print:hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center space-x-2 text-teal-900 dark:text-teal-200 font-bold text-sm">
-              <CheckCircle2 size={18} className="text-teal-600" />
+              <CheckCircle2 size={18} className="text-teal-600 flex-shrink-0" />
               <span>Formal Acknowledgement of Receipt</span>
             </div>
             {acknowledged && (
@@ -490,6 +490,7 @@ export const HandoverPage: React.FC = () => {
                 variant="primary"
                 loading={ackLoading}
                 onClick={handleAcknowledge}
+                className="w-full sm:w-auto"
                 icon={<CheckCircle2 size={14} />}
               >
                 Acknowledge Receipt of Version {handoverData?.activeVersionNumber || 1}
@@ -503,7 +504,7 @@ export const HandoverPage: React.FC = () => {
         </section>
 
         {/* Stretch Q&A Assistant */}
-        <section className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-navy-950/60 space-y-4 print:hidden">
+        <section className="p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-navy-950/60 space-y-4 print:hidden">
           <div className="flex items-center space-x-2 text-slate-900 dark:text-white font-bold text-sm">
             <Sparkles size={16} className="text-teal-600" />
             <span>Ask Relay Q&A Assistant (Cited Answers Only)</span>

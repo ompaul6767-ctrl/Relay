@@ -12,6 +12,15 @@
   }
 }
 
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Print Stylesheet for Handover Export */
 @media print {
   header, aside, button, nav, .print\:hidden {

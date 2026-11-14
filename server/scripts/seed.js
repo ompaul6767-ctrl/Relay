@@ -152,6 +152,7 @@ async function runSeed() {
 
   console.log(`\n🎉 [Seed] Seeding completed successfully! Version 1 published.`);
   await disconnectDB();
+  process.exit(0);
 }
 
 runSeed().catch((err) => {

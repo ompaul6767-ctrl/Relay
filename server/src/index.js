@@ -9,6 +9,14 @@ async function startServer() {
     console.log('[Relay] Connecting to database...');
     await connectDB();
 
+    app.listen(env.PORT, () => {
+      console.log(`===============================================`);
+      console.log(`🚀 Relay Backend running on http://localhost:${env.PORT}`);
+      console.log(`🔒 Security: Helmet, JWT ACLs, Rate Limiter Active`);
+      console.log(`🤖 AI Engine: Gemini API (Fallback: Rule-Based Extractor)`);
+      console.log(`===============================================`);
+    });
+
     // Auto-seed demo case on first boot if database is fresh
     try {
       const demoCase = await Case.findOne({ title: 'Campus Event Portal' });
@@ -20,14 +28,6 @@ async function startServer() {
     } catch (seedErr) {
       console.warn('[Relay] Auto-seed non-fatal notice:', seedErr.message);
     }
-
-    app.listen(env.PORT, () => {
-      console.log(`===============================================`);
-      console.log(`🚀 Relay Backend running on http://localhost:${env.PORT}`);
-      console.log(`🔒 Security: Helmet, JWT ACLs, Rate Limiter Active`);
-      console.log(`🤖 AI Engine: Gemini API (Fallback: Rule-Based Extractor)`);
-      console.log(`===============================================`);
-    });
   } catch (error) {
     console.error('[Relay] Failed to start server:', error);
     process.exit(1);

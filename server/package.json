@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "build": "node -e \"console.log('Server build not required')\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "node scripts/seed.js",

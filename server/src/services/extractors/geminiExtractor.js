@@ -3,6 +3,7 @@ import { env } from '../../config/environment.js';
 import { extractWithRules } from './ruleBasedExtractor.js';
 
 let geminiClient = null;
+let geminiTemporarilyUnavailable = false;
 if (env.GEMINI_API_KEY) {
   try {
     geminiClient = new GoogleGenerativeAI(env.GEMINI_API_KEY);
@@ -16,13 +17,13 @@ if (env.GEMINI_API_KEY) {
  * Falls back to deterministic rule-based extractor if key is missing, call fails, or quota is hit.
  */
 export async function extractClaims({ spans, includeRestricted = false }) {
-  // If no Gemini API key configured, use deterministic rule-based extractor immediately
-  if (!env.GEMINI_API_KEY || !geminiClient) {
+  // If no Gemini API key configured or quota was exhausted, use deterministic rule-based extractor immediately
+  if (!env.GEMINI_API_KEY || !geminiClient || geminiTemporarilyUnavailable) {
     const claims = extractWithRules(spans, { includeRestricted });
     return {
       claims,
       usedFallback: true,
-      fallbackReason: 'No GEMINI_API_KEY provided in environment variables',
+      fallbackReason: geminiTemporarilyUnavailable ? 'Gemini API daily quota reached or service temporarily unavailable' : 'No GEMINI_API_KEY provided in environment variables',
       bannerMessage: 'AI extraction unavailable, using rule-based extractor',
     };
   }
@@ -121,6 +122,7 @@ Output strict JSON with this exact schema:
 
     throw new Error('Gemini returned empty or invalid claims array.');
   } catch (error) {
+    geminiTemporarilyUnavailable = true;
     console.warn(`[GeminiExtractor] Gemini failed (${error.message}). Falling back to rule-based extractor.`);
     const claims = extractWithRules(spans, { includeRestricted });
     return {

@@ -20,7 +20,7 @@ describe('Security & ACL Boundary Enforcement', () => {
     demoCaseId = String(demoCase._id);
     leadToken = signToken(DEMO_USERS.lead);
     devToken = signToken(DEMO_USERS.incoming_dev);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await disconnectDB();

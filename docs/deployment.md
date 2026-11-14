@@ -1,6 +1,10 @@
 # 🚀 Relay Deployment Guide
 
-Relay is architected for zero-configuration, production-ready deployment. In production mode, Express serves the optimized Vite/React single-page application (`client/dist`) and the REST API (`/api/*`) from a single origin on the same port, completely eliminating cross-origin CORS complications.
+### 🌐 Live Production Deployment
+- **Frontend App (Vercel):** [https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/)
+- **Backend API (Render):** [https://relay-ygyb.onrender.com](https://relay-ygyb.onrender.com)
+- **API Health Check:** [https://client-cxv9.vercel.app/api/health](https://client-cxv9.vercel.app/api/health)
+- **Database:** Live MongoDB Atlas Cluster
 
 ---
 

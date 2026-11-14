@@ -5,6 +5,13 @@
 > **Problem Statement:** *"Prevent Critical Knowledge From Leaving With People."*  
 > **Target Users:** Student clubs, hackathon teams, volunteer groups, and small software teams.
 
+### 🌐 Live Production Deployment
+- **Live Web Application (Vercel):** [https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/)
+- **Live Backend API (Render):** [https://relay-ygyb.onrender.com](https://relay-ygyb.onrender.com)
+- **API Health Check:** [https://client-cxv9.vercel.app/api/health](https://client-cxv9.vercel.app/api/health)
+- **Database:** MongoDB Atlas (Live Persistent Cluster)
+- **Zero Sign-Up Required:** Instant switchable demo personas (Lead, Incoming Dev, Incoming Designer, Departing Member).
+
 ---
 
 ## 1. What Relay Does
@@ -198,8 +205,8 @@ Tests:
 
 ## 7. Judge Walkthrough Checklist (End-to-End)
 
-1. Open the public link.
-2. Click **"Load Demo Project"**.
+1. Open the live deployment: **[https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/)** (or run locally on `http://localhost:5000`).
+2. Click **"Load Demo Project"** (or use the one pre-loaded on the dashboard).
 3. In Step 1 (**Connect**), inspect the 7 source cards, ACL badges, and consent confirmation indicators. Click **"Inspect Raw"** on any source.
 4. In Step 2 & 3 (**Reconstruct & Verify**), observe claims grouped by type, status chips, and the summary strip.
 5. In Step 4 (**Review**):

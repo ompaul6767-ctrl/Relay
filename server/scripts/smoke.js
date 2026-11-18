@@ -33,11 +33,12 @@ async function runSmokeTest() {
     try {
       const res = await fetch(url, options);
       clearTimeout(timer);
+      const rawText = await res.text();
       let data = null;
       try {
-        data = await res.json();
+        data = JSON.parse(rawText);
       } catch (e) {
-        data = await res.text();
+        data = rawText;
       }
       return { status: res.status, ok: res.ok, data };
     } catch (err) {

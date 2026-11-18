@@ -230,21 +230,41 @@ router.post('/:id/publish', authMiddleware, requireLead, async (req, res, next) 
       });
     }
 
+    // Staleness invariant (Section 7): Approved claims contradicted or superseded by newer evidence block unchanged republish
+    const staleUndismissed = approvedClaims.filter(
+      (c) => c.isStale && (!c.dismissedStaleness || !c.dismissedStaleness.reason)
+    );
+
+    if (staleUndismissed.length > 0) {
+      return res.status(400).json({
+        error: 'Publication blocked: stale claims detected',
+        message: `Cannot publish unchanged: ${staleUndismissed.length} approved claim(s) have been contradicted or superseded by newer evidence. Please re-review, edit, reject, or dismiss them with a recorded justification.`,
+        staleClaims: staleUndismissed.map((c) => ({
+          id: c._id,
+          text: c.text,
+          stalenessReason: c.stalenessReason,
+        })),
+      });
+    }
+
+    // Exclude superseded claims from published version snapshot
+    const publishableClaims = approvedClaims.filter((c) => c.stalenessStatus !== 'superseded');
+
     // Calculate next version number
     const latestVersion = await Version.findOne({ caseId }).sort({ number: -1 }).lean();
     const nextNumber = latestVersion ? latestVersion.number + 1 : 1;
 
     // Calculate diff from previous version
-    let diff = { added: approvedClaims.length, modified: 0, removed: 0, details: [] };
+    let diff = { added: publishableClaims.length, modified: 0, removed: 0, details: [] };
     if (latestVersion && latestVersion.approvedClaimSnapshot) {
       const prevIds = new Set(latestVersion.approvedClaimSnapshot.map((c) => String(c._id)));
-      const currIds = new Set(approvedClaims.map((c) => String(c._id)));
+      const currIds = new Set(publishableClaims.map((c) => String(c._id)));
 
       let added = 0;
       let removed = 0;
       let modified = 0;
 
-      for (const curr of approvedClaims) {
+      for (const curr of publishableClaims) {
         if (!prevIds.has(String(curr._id))) {
           added++;
         } else {
@@ -277,7 +297,7 @@ router.post('/:id/publish', authMiddleware, requireLead, async (req, res, next) 
     const versionDoc = await Version.create({
       caseId,
       number: nextNumber,
-      approvedClaimSnapshot: approvedClaims,
+      approvedClaimSnapshot: publishableClaims,
       publishedBy: req.user.name,
       publishedAt: new Date(),
       diffFromPrevious: diff,
@@ -514,6 +534,53 @@ Format your response as JSON:
     return res.json({
       answer,
       citations: matchingClaims,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/cases/:id/claims/:claimId/dismiss-staleness
+ * Lead records a documented justification to dismiss a staleness flag.
+ * Audited per Section 7 specification.
+ */
+router.post('/:id/claims/:claimId/dismiss-staleness', authMiddleware, requireLead, async (req, res, next) => {
+  try {
+    const { id: caseId, claimId } = req.params;
+    const { reason } = req.body || {};
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'A justification reason is required to dismiss a staleness flag.' });
+    }
+
+    const claim = await Claim.findOne({ _id: claimId, caseId });
+    if (!claim) {
+      return res.status(404).json({ error: 'Claim not found' });
+    }
+
+    claim.isStale = false;
+    claim.stalenessStatus = 'fresh';
+    claim.dismissedStaleness = {
+      dismissedBy: req.user.name,
+      dismissedAt: new Date(),
+      reason: reason.trim(),
+    };
+    await claim.save();
+
+    await logAudit({
+      caseId,
+      actor: req.user.name,
+      role: req.user.role,
+      action: 'dismiss_staleness',
+      targetId: String(claimId),
+      metadata: { reason: reason.trim() },
+    });
+
+    return res.json({
+      success: true,
+      claim,
+      message: 'Staleness flag dismissed with recorded justification.',
     });
   } catch (err) {
     next(err);

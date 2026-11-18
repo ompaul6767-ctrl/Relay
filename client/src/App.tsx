@@ -12,6 +12,7 @@ import { ReconstructPage } from './pages/ReconstructPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { HandoverPage } from './pages/HandoverPage';
 import { InterviewPage } from './pages/InterviewPage';
+import { TimelinePage } from './pages/TimelinePage';
 import { AuditPage } from './pages/AuditPage';
 import { LimitationsPage } from './pages/LimitationsPage';
 
@@ -29,6 +30,7 @@ export function App() {
                 <Route path="/reconstruct" element={<ReconstructPage />} />
                 <Route path="/verify" element={<ReconstructPage />} />
                 <Route path="/interview" element={<InterviewPage />} />
+                <Route path="/timeline" element={<TimelinePage />} />
                 <Route path="/review" element={<ReviewPage />} />
                 <Route path="/handover" element={<HandoverPage />} />
                 <Route path="/audit" element={<AuditPage />} />

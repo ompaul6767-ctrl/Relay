@@ -42,6 +42,17 @@ export function detectConflicts(claims) {
       continue;
     }
 
+    // If one of the claims is an explicit decision reversal (e.g. "reversed", "switched from"),
+    // it represents an intentional chronological decision reversal rather than a concurrent conflict.
+    // Keep both claims individually so staleness detection and the timeline can track the progression.
+    const hasReversal = group.some((c) =>
+      /reversed|revert|switched|switch|instead of|migrated from|no longer/i.test(c.text || '')
+    );
+    if (hasReversal) {
+      processedClaims.push(...group);
+      continue;
+    }
+
     // We have a true conflict!
     const [entityKey, attribute] = key.split('::');
     const conflictingItems = group.map((c) => {

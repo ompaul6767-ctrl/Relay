@@ -4,6 +4,7 @@ import { checkSupport } from './supportChecker.js';
 import { detectConflicts } from './conflictDetector.js';
 import { detectGaps } from './gapDetector.js';
 import { detectKeyPersonRisk } from './keyPersonDetector.js';
+import { detectStaleness } from './stalenessDetector.js';
 
 /**
  * Full Reconstruction & Verification Engine
@@ -89,26 +90,50 @@ export async function runReconstructionPipeline({
   // Merge all claims together
   const allClaims = [...conflictResolvedClaims, ...gapClaims, ...rejectedClaims];
 
-  // Enforce strictest ACL from spans
-  const finalClaims = allClaims.map((claim) => {
+  // Enforce strictest ACL from spans and derive evidence dates
+  const datedClaims = allClaims.map((claim) => {
     let strictestAcl = claim.acl || 'team';
+    let bestDate = null;
+    let isEstimated = true;
+
     if (claim.spanRefs && claim.spanRefs.length > 0) {
       for (const ref of claim.spanRefs) {
         const span = spansMap.get(ref.spanId);
-        if (span && span.acl === 'leads_only') {
-          strictestAcl = 'leads_only';
-          break;
-        }
-        if (span && span.acl === 'owner_only' && strictestAcl !== 'leads_only') {
-          strictestAcl = 'owner_only';
+        if (span) {
+          if (span.acl === 'leads_only') {
+            strictestAcl = 'leads_only';
+          }
+          if (span.acl === 'owner_only' && strictestAcl !== 'leads_only') {
+            strictestAcl = 'owner_only';
+          }
+          if (span.timestamp) {
+            const d = new Date(span.timestamp);
+            if (!isNaN(d.getTime())) {
+              if (!bestDate || d > bestDate) {
+                bestDate = d;
+                isEstimated = false;
+              }
+            }
+          }
         }
       }
     }
+
+    if (!bestDate) {
+      bestDate = new Date();
+      isEstimated = true;
+    }
+
     return {
       ...claim,
       acl: strictestAcl,
+      timelineDate: claim.timelineDate || bestDate,
+      dateEstimated: claim.dateEstimated !== undefined ? claim.dateEstimated : isEstimated,
     };
   });
+
+  // Step 7: Staleness & Superseded Claims Detection (Improvement 3)
+  const finalClaims = detectStaleness(datedClaims);
 
   // Calculate summary counts
   const summary = {
@@ -133,6 +158,7 @@ export async function runReconstructionPipeline({
     },
     conflictsCount: finalClaims.filter((c) => c.status === 'Conflicting').length,
     gapsCount: finalClaims.filter((c) => c.status === 'Missing').length,
+    staleCount: finalClaims.filter((c) => c.isStale).length,
   };
 
   return {

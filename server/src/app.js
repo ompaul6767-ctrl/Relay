@@ -14,6 +14,7 @@ import spanRoutes from './routes/spanRoutes.js';
 import handoverRoutes from './routes/handoverRoutes.js';
 import demoRoutes from './routes/demoRoutes.js';
 import interviewRoutes from './routes/interviewRoutes.js';
+import timelineRoutes from './routes/timelineRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,6 +66,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/cases/:id/interview', interviewRoutes);
+app.use('/api/cases/:id/timeline', timelineRoutes);
 app.use('/api/cases/:id/sources', sourceRoutes);
 app.use('/api', handoverRoutes);
 app.use('/api', claimRoutes);

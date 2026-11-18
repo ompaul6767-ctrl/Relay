@@ -17,4 +17,10 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-3.8-flash
+        value: gemini-2.5-flash
+      - key: EMBEDDING_MODEL
+        value: text-embedding-004
+      - key: ALLOW_DEMO_LOGIN
+        value: "true"
+      - key: GITHUB_TOKEN
+        sync: false

@@ -11,9 +11,16 @@ const getApiBase = (): string => {
 
 const API_BASE = getApiBase();
 
+/**
+ * Robust API request helper with:
+ * - JWT Authorization header injection
+ * - Automatic retry on 502/503/504 cold-start wakes
+ * - Custom DOM event dispatching to alert the user during backend wake-ups
+ */
 export async function apiRequest<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  maxRetries = 2
 ): Promise<T> {
   const token = localStorage.getItem('relay_token');
 
@@ -32,33 +39,75 @@ export async function apiRequest<T = any>(
   }
 
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  let lastError: any = null;
 
-  const response = await fetch(`${API_BASE}${normalizedEndpoint}`, {
-    ...options,
-    headers,
-  });
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(`${API_BASE}${normalizedEndpoint}`, {
+        ...options,
+        headers,
+      });
 
-  let data: any = {};
-  try {
-    data = await response.json();
-  } catch {
-    data = {};
+      // Cold start / bad gateway status codes on free-tier Render
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('relay:server-waking', { detail: { waking: true } }));
+        }
+
+        if (attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+          continue;
+        }
+      }
+
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok) {
+        const errorMsg =
+          data.message ||
+          data.error ||
+          (response.status === 502 || response.status === 503 || response.status === 504
+            ? 'Backend service is waking up. Please retry in a few moments.'
+            : `HTTP error ${response.status}`);
+        const err = new Error(errorMsg);
+        (err as any).status = response.status;
+        (err as any).details = data.details;
+        throw err;
+      }
+
+      // Success: notify UI that server is awake
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('relay:server-waking', { detail: { waking: false } }));
+      }
+
+      return data;
+    } catch (err: any) {
+      lastError = err;
+
+      // Network / fetch errors during server boot
+      if (err.name === 'TypeError' || err.message?.includes('fetch') || err.status >= 502) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('relay:server-waking', { detail: { waking: true } }));
+        }
+        if (attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 2500 * (attempt + 1)));
+          continue;
+        }
+      }
+      break;
+    }
   }
 
-  if (!response.ok) {
-    const errorMsg =
-      data.message ||
-      data.error ||
-      (response.status === 502 || response.status === 503 || response.status === 504
-        ? 'Backend service is temporarily unavailable or waking up. Please retry in a few moments.'
-        : `HTTP error ${response.status}`);
-    const err = new Error(errorMsg);
-    (err as any).status = response.status;
-    (err as any).details = data.details;
-    throw err;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('relay:server-waking', { detail: { waking: false } }));
   }
 
-  return data;
+  throw lastError;
 }
 
 export const api = {
@@ -68,6 +117,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ role }),
     }),
+  login: (email: string, password: string) =>
+    apiRequest<{ success: boolean; token: string; user: any }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  getDemoAccounts: () =>
+    apiRequest<{ enabled: boolean; accounts: any[] }>('/auth/demo-accounts'),
   getMe: () => apiRequest('/auth/me'),
 
   // Cases
@@ -86,7 +142,10 @@ export const api = {
   acknowledgeVersion: (id: string, data: { versionNumber: number; question?: string }) =>
     apiRequest(`/cases/${id}/acknowledge`, { method: 'POST', body: JSON.stringify(data) }),
   askQuestion: (id: string, question: string) =>
-    apiRequest(`/cases/${id}/ask`, { method: 'POST', body: JSON.stringify({ question }) }),
+    apiRequest<{ answer: string; citations: any[]; retrievalMode?: string }>(
+      `/cases/${id}/ask`,
+      { method: 'POST', body: JSON.stringify({ question }) }
+    ),
 
   // Sources
   getSources: (caseId: string) =>
@@ -95,6 +154,11 @@ export const api = {
     apiRequest(`/cases/${caseId}/sources`, { method: 'POST', body: formData }),
   createSourceJson: (caseId: string, data: any) =>
     apiRequest(`/cases/${caseId}/sources`, { method: 'POST', body: JSON.stringify(data) }),
+  importGithubRepo: (caseId: string, data: { repoUrl: string; consent: boolean; acl: string }) =>
+    apiRequest<{ success: boolean; source: any; spansCount: number; message: string }>(
+      `/cases/${caseId}/sources/github`,
+      { method: 'POST', body: JSON.stringify(data) }
+    ),
 
   // Claims
   getClaims: (caseId: string, filters?: Record<string, string>) => {
@@ -107,6 +171,11 @@ export const api = {
     apiRequest('/claims/bulk-approve', { method: 'POST', body: JSON.stringify({ caseId, claimIds }) }),
   testFakeQuote: (data: { caseId: string; spanId: string; fakeQuote: string; claimText?: string }) =>
     apiRequest('/claims/test-fake-quote', { method: 'POST', body: JSON.stringify(data) }),
+  dismissStaleness: (caseId: string, claimId: string, data: { reason: string }) =>
+    apiRequest(`/cases/${caseId}/claims/${claimId}/dismiss-staleness`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Spans
   getSpan: (spanId: string, caseId?: string) =>
@@ -115,6 +184,34 @@ export const api = {
   // Handover
   getHandover: (caseId: string, version?: number) =>
     apiRequest(`/cases/${caseId}/handover${version ? `?version=${version}` : ''}`),
+
+  // Interview (Improvement 1)
+  generateInterviewQuestions: (caseId: string) =>
+    apiRequest<{ success: boolean; questions: any[]; stats: any }>(
+      `/cases/${caseId}/interview/generate`,
+      { method: 'POST' }
+    ),
+  getInterviewQuestions: (caseId: string) =>
+    apiRequest<{ questions: any[]; stats: any }>(`/cases/${caseId}/interview`),
+  answerInterviewQuestion: (caseId: string, questionId: string, data: { answer: string; chosenValue?: string; acl?: string }) =>
+    apiRequest<{ success: boolean; question: any; claim: any; message: string }>(
+      `/cases/${caseId}/interview/${questionId}/answer`,
+      { method: 'POST', body: JSON.stringify(data) }
+    ),
+  skipInterviewQuestion: (caseId: string, questionId: string) =>
+    apiRequest<{ success: boolean; question: any }>(
+      `/cases/${caseId}/interview/${questionId}/skip`,
+      { method: 'POST' }
+    ),
+  reassignInterviewQuestion: (caseId: string, questionId: string, data: { suggestedContact: string }) =>
+    apiRequest<{ success: boolean; question: any }>(
+      `/cases/${caseId}/interview/${questionId}/reassign`,
+      { method: 'POST', body: JSON.stringify(data) }
+    ),
+
+  // Timeline (Improvement 3)
+  getTimelineEvents: (caseId: string) =>
+    apiRequest<{ events: any[]; summary: any }>(`/cases/${caseId}/timeline`),
 
   // Demo
   seedDemo: () => apiRequest('/demo/seed', { method: 'POST' }),

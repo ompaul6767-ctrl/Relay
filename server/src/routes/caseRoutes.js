@@ -253,6 +253,15 @@ router.post('/:id/publish', authMiddleware, requireLead, async (req, res, next) 
       }
 
       diff = { added, modified, removed, details: [] };
+
+      // Idempotency check: If nothing changed since the latest publish, return existing version cleanly
+      if (added === 0 && modified === 0 && removed === 0 && foundCase.currentVersion === latestVersion.number) {
+        return res.json({
+          success: true,
+          version: latestVersion,
+          message: `Handover version ${latestVersion.number} is already published and up to date.`,
+        });
+      }
     }
 
     const versionDoc = await Version.create({
@@ -354,10 +363,34 @@ router.post('/:id/acknowledge', authMiddleware, async (req, res, next) => {
       });
     }
 
+    const userIdStr = String(req.user.id || req.user._id);
+
+    // Idempotency check: prevent duplicate acknowledgements for the same version by the same user
+    const existingAck = await Acknowledgement.findOne({
+      caseId,
+      versionNumber,
+      userId: userIdStr,
+    });
+
+    if (existingAck) {
+      if (question && question.trim()) {
+        existingAck.questionsRaised.push({
+          text: question.trim(),
+          createdAt: new Date(),
+        });
+        await existingAck.save();
+      }
+      return res.status(200).json({
+        success: true,
+        acknowledgement: existingAck,
+        message: `Handover version ${versionNumber} already acknowledged by ${req.user.name}.`,
+      });
+    }
+
     const ack = await Acknowledgement.create({
       caseId,
       versionNumber,
-      userId: String(req.user.id || req.user._id),
+      userId: userIdStr,
       userName: req.user.name,
       userRole: req.user.role,
       acknowledgedAt: new Date(),

@@ -16,7 +16,16 @@ const MOBILE_STEPS = [
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { bannerMessage, setBannerMessage, setActiveStep } = useCase();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [serverWaking, setServerWaking] = useState(false);
   const location = useLocation();
+
+  React.useEffect(() => {
+    const handleWaking = (e: any) => {
+      setServerWaking(Boolean(e.detail?.waking));
+    };
+    window.addEventListener('relay:server-waking', handleWaking);
+    return () => window.removeEventListener('relay:server-waking', handleWaking);
+  }, []);
 
   const isWorkflowStep = MOBILE_STEPS.some((s) => s.path === location.pathname);
 
@@ -26,6 +35,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         onToggleMobileMenu={() => setMobileMenuOpen((prev) => !prev)}
         isMobileMenuOpen={mobileMenuOpen}
       />
+
+      {/* Render Free-Tier Cold Start Banner */}
+      {serverWaking && (
+        <div className="bg-sky-600 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between shadow-md animate-pulse">
+          <div className="flex items-center space-x-2 max-w-7xl mx-auto w-full">
+            <span className="text-base">⚡</span>
+            <span>
+              Waking the server, this can take up to a minute... Relay is automatically reconnecting.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Mandatory Fallback Banner */}
       {bannerMessage && (

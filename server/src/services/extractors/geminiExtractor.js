@@ -1,9 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { env } from '../../config/environment.js';
 import { extractWithRules } from './ruleBasedExtractor.js';
+import {
+  executeWithRetry,
+  isAiCoolingDown,
+  getAiCoolingRemainingSeconds,
+} from '../aiResilience.js';
 
 let geminiClient = null;
-let geminiTemporarilyUnavailable = false;
 if (env.GEMINI_API_KEY) {
   try {
     geminiClient = new GoogleGenerativeAI(env.GEMINI_API_KEY);
@@ -14,17 +18,32 @@ if (env.GEMINI_API_KEY) {
 
 /**
  * Extracts atomic claims using Gemini API with JSON schema enforcement.
- * Falls back to deterministic rule-based extractor if key is missing, call fails, or quota is hit.
+ * Implements exponential back-off retries, 6-second timeout, 60s cooldown window,
+ * and resilient fallback to deterministic rule-based extractor.
  */
 export async function extractClaims({ spans, includeRestricted = false }) {
-  // If no Gemini API key configured or quota was exhausted, use deterministic rule-based extractor immediately
-  if (!env.GEMINI_API_KEY || !geminiClient || geminiTemporarilyUnavailable) {
+  // Case 1: No Gemini API key configured
+  if (!env.GEMINI_API_KEY || !geminiClient) {
     const claims = extractWithRules(spans, { includeRestricted });
     return {
       claims,
       usedFallback: true,
-      fallbackReason: geminiTemporarilyUnavailable ? 'Gemini API daily quota reached or service temporarily unavailable' : 'No GEMINI_API_KEY provided in environment variables',
-      bannerMessage: 'AI extraction unavailable, using rule-based extractor',
+      fallbackReason: 'No GEMINI_API_KEY configured in environment variables',
+      bannerMessage: 'Rule-based extractor used (no GEMINI_API_KEY configured)',
+      extractorUsed: 'rule-based',
+    };
+  }
+
+  // Case 2: Gemini API is temporarily in a 60-second cool-down window
+  if (isAiCoolingDown()) {
+    const remaining = getAiCoolingRemainingSeconds();
+    const claims = extractWithRules(spans, { includeRestricted });
+    return {
+      claims,
+      usedFallback: true,
+      fallbackReason: `Gemini API cooling down (${remaining}s remaining) after recent errors/rate limits`,
+      bannerMessage: `Rule-based extractor used: Gemini API cool-down active (${remaining}s remaining)`,
+      extractorUsed: 'rule-based',
     };
   }
 
@@ -37,8 +56,9 @@ export async function extractClaims({ spans, includeRestricted = false }) {
   });
 
   try {
+    const modelName = env.GEMINI_MODEL || 'gemini-2.5-flash';
     const model = geminiClient.getGenerativeModel({
-      model: env.GEMINI_MODEL || 'gemini-2.5-flash',
+      model: modelName,
       generationConfig: {
         temperature: 0.1,
         responseMimeType: 'application/json',
@@ -84,12 +104,12 @@ Output strict JSON with this exact schema:
 
     const prompt = `${systemPrompt}\n\nProject Spans to analyze:\n${JSON.stringify(spansPayload, null, 2)}`;
 
-    // 6-second timeout race to guarantee responsive fallback if API experiences high demand spikes
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Gemini API call timed out (high network latency or API demand spike)')), 6000)
+    // Call Gemini with 2 retries (exponential backoff) and 6s per-request timeout
+    const result = await executeWithRetry(
+      () => model.generateContent(prompt),
+      { maxRetries: 2, baseDelayMs: 400, timeoutMs: 6000, context: 'GeminiExtractor' }
     );
 
-    const result = await Promise.race([model.generateContent(prompt), timeoutPromise]);
     const responseText = result.response.text();
     const parsed = JSON.parse(responseText);
 
@@ -116,20 +136,21 @@ Output strict JSON with this exact schema:
         claims: sanitizedClaims,
         usedFallback: false,
         fallbackReason: null,
-        bannerMessage: null,
+        bannerMessage: `Extracted using AI (${modelName})`,
+        extractorUsed: `AI (${modelName})`,
       };
     }
 
     throw new Error('Gemini returned empty or invalid claims array.');
   } catch (error) {
-    geminiTemporarilyUnavailable = true;
-    console.warn(`[GeminiExtractor] Gemini failed (${error.message}). Falling back to rule-based extractor.`);
+    console.warn(`[GeminiExtractor] Gemini call failed (${error.message}). Falling back to rule-based extractor with 60s cooldown.`);
     const claims = extractWithRules(spans, { includeRestricted });
     return {
       claims,
       usedFallback: true,
       fallbackReason: error.message,
-      bannerMessage: 'AI extraction unavailable, using rule-based extractor',
+      bannerMessage: `Rule-based extractor used (${error.message.substring(0, 80)})`,
+      extractorUsed: 'rule-based',
     };
   }
 }

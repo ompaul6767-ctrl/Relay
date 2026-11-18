@@ -15,6 +15,7 @@ interface AuthContextType {
   role: UserRole;
   isLoading: boolean;
   switchRole: (role: UserRole) => Promise<void>;
+  loginWithCredentials: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   role: 'lead',
   isLoading: false,
   switchRole: async () => {},
+  loginWithCredentials: async () => false,
   logout: () => {},
 });
 
@@ -62,6 +64,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithCredentials = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const res = await api.login(email, password);
+      if (res.token) {
+        localStorage.setItem('relay_token', res.token);
+        localStorage.setItem('relay_user', JSON.stringify(res.user));
+        localStorage.setItem('relay_role', res.user.role);
+        setUser(res.user);
+        setRole(res.user.role);
+        return true;
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('relay_token');
     localStorage.removeItem('relay_user');
@@ -71,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, isLoading, switchRole, logout }}>
+    <AuthContext.Provider value={{ user, role, isLoading, switchRole, loginWithCredentials, logout }}>
       {children}
     </AuthContext.Provider>
   );

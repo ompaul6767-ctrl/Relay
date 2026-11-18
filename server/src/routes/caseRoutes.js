@@ -11,6 +11,7 @@ import { Acknowledgement } from '../models/Acknowledgement.js';
 import { Audit, logAudit } from '../models/Audit.js';
 import { runReconstructionPipeline } from '../services/verification/engine.js';
 import { generateInterviewQuestions } from '../services/interviewEngine.js';
+import { embedApprovedClaims, answerHandoverQuestion } from '../services/embeddingService.js';
 import { env } from '../config/environment.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -307,6 +308,13 @@ router.post('/:id/publish', authMiddleware, requireLead, async (req, res, next) 
     foundCase.currentVersion = nextNumber;
     await foundCase.save();
 
+    // Section 6 Part B: Embed approved claims using configured EMBEDDING_MODEL
+    try {
+      await embedApprovedClaims(publishableClaims);
+    } catch (embedErr) {
+      console.warn('[Publish] Non-fatal error embedding approved claims:', embedErr.message);
+    }
+
     await logAudit({
       caseId,
       actor: req.user.name,
@@ -464,76 +472,18 @@ router.post('/:id/ask', authMiddleware, async (req, res, next) => {
     const { question } = parse.data;
     const allowedAcls = req.user.allowedAcls || ['team'];
 
-    // Retrieve ONLY approved claims that match viewer's ACL
-    const visibleApprovedClaims = await Claim.find({
+    // Section 6 Part B: Q&A Assistant using 3-tier retrieval (Atlas Vector Search -> In-app similarity -> Keyword)
+    // Server-side pre-filtering strictly prevents restricted claim leakage
+    const result = await answerHandoverQuestion({
       caseId,
-      reviewDecision: 'approved',
-      acl: { $in: allowedAcls },
-    }).lean();
-
-    if (visibleApprovedClaims.length === 0) {
-      return res.json({
-        answer: 'No approved claims are currently available to answer this question. Please ensure claims have been reviewed and published.',
-        citations: [],
-      });
-    }
-
-    // Try Gemini if available
-    if (env.GEMINI_API_KEY) {
-      try {
-        const client = new GoogleGenerativeAI(env.GEMINI_API_KEY);
-        const model = client.getGenerativeModel({ model: env.GEMINI_MODEL || 'gemini-2.5-flash' });
-
-        const prompt = `You are a strict Q&A assistant for software handovers.
-Answer the question using ONLY the provided verified claims.
-Do not invent facts or use outside knowledge. If the provided claims do not answer the question, state that clearly.
-For every factual point in your answer, cite the Claim ID [Claim X].
-
-User Question: "${question}"
-
-Available Permitted Claims:
-${visibleApprovedClaims.map((c, i) => `[Claim ${i + 1}] (Type: ${c.type}): ${c.text}`).join('\n')}
-
-Format your response as JSON:
-{
-  "answer": "string",
-  "citedClaimIndexes": [1, 2]
-}`;
-
-        const result = await model.generateContent(prompt);
-        const parsed = JSON.parse(result.response.text());
-
-        const citations = (parsed.citedClaimIndexes || [])
-          .map((idx) => visibleApprovedClaims[idx - 1])
-          .filter(Boolean);
-
-        return res.json({
-          answer: parsed.answer,
-          citations,
-        });
-      } catch (err) {
-        console.warn('[Q&A] Gemini failed, using deterministic keyword search:', err.message);
-      }
-    }
-
-    // Deterministic fallback search
-    const lowerQ = question.toLowerCase();
-    const matchingClaims = visibleApprovedClaims.filter((c) => {
-      const words = lowerQ.split(/\s+/).filter((w) => w.length > 3);
-      return words.some((w) => c.text.toLowerCase().includes(w));
+      question,
+      allowedAcls,
     });
 
-    if (matchingClaims.length === 0) {
-      return res.json({
-        answer: `I could not find an approved claim answering "${question}" within your permitted access scope.`,
-        citations: [],
-      });
-    }
-
-    const answer = `Based on ${matchingClaims.length} approved claim(s):\n${matchingClaims.map((c) => `• ${c.text}`).join('\n')}`;
     return res.json({
-      answer,
-      citations: matchingClaims,
+      answer: result.answer,
+      citations: result.citations,
+      retrievalMode: result.retrievalMode,
     });
   } catch (err) {
     next(err);

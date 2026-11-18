@@ -528,14 +528,42 @@ export const HandoverPage: React.FC = () => {
           </form>
 
           {askResponse && (
-            <div className="p-4 rounded-xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 text-xs space-y-2 animate-in fade-in">
-              <div className="font-semibold text-slate-800 dark:text-slate-200">Answer:</div>
+            <div className="p-4 rounded-xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 text-xs space-y-3 animate-in fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">Answer:</span>
+                {askResponse.retrievalMode && (
+                  <span className="inline-flex items-center space-x-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                    <span>Retrieval Mode: <strong>{askResponse.retrievalMode}</strong></span>
+                  </span>
+                )}
+              </div>
               <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                 {askResponse.answer}
               </p>
               {askResponse.citations?.length > 0 && (
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400">
-                  <span>Cited {askResponse.citations.length} approved claim(s).</span>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Cited Approved Claims ({askResponse.citations.length}):
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {askResponse.citations.map((c: any, i: number) => (
+                      <button
+                        key={c._id || i}
+                        type="button"
+                        onClick={() => {
+                          setSelectedClaim(c);
+                          setDrawerOpen(true);
+                        }}
+                        className="inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-teal-400 transition-colors"
+                      >
+                        <Shield size={10} className="text-teal-600" />
+                        <span className="font-mono">Claim #{i + 1}</span>
+                        <span className="max-w-[160px] truncate text-slate-500">({c.text})</span>
+                        <ExternalLink size={10} className="text-teal-600 ml-0.5" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

@@ -11,6 +11,7 @@
     "test": "vitest run --fileParallelism=false",
     "test:watch": "vitest",
     "seed": "node scripts/seed.js",
+    "smoke": "node scripts/smoke.js",
     "evaluate": "node scripts/evaluate.js"
   },
   "dependencies": {

@@ -1,0 +1,104 @@
+{
+  "description": "Labelled evaluation question set for Q&A vector and keyword retrieval benchmarking",
+  "version": "1.0",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Who owns the ticket scanner service and offline HMAC verification?",
+      "expectedEntity": "services/ticket-scanner",
+      "expectedKeywords": ["Aarav", "scanner", "ticket-scanner"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q2",
+      "question": "What database was chosen for long-term audit log retention?",
+      "expectedEntity": "audit_log_database",
+      "expectedKeywords": ["PostgreSQL", "database", "retention"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q3",
+      "question": "What issue happens when the redis cache network disconnects?",
+      "expectedEntity": "redis_cache",
+      "expectedKeywords": ["redis", "reconnection", "ioredis", "42"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q4",
+      "question": "Who configured rate limiting and CORS policies for campus domains?",
+      "expectedEntity": "api/gateway",
+      "expectedKeywords": ["Priya", "rate limiting", "CORS"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q5",
+      "question": "Who exported the Tailwind color palette and design system tokens?",
+      "expectedEntity": "ui/tokens",
+      "expectedKeywords": ["Rohan", "Tailwind", "tokens"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q6",
+      "question": "When do the staging deployment credentials on AWS ECS need to be rotated?",
+      "expectedEntity": "staging_deploy_credentials",
+      "expectedKeywords": ["rotated", "semester", "staging", "ECS"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q7",
+      "question": "What library is used for QR decoding in the ticket scanner?",
+      "expectedEntity": "services/ticket-scanner",
+      "expectedKeywords": ["zxing", "QR", "decoding"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q8",
+      "question": "Who is currently working on the Payment Gateway integration?",
+      "expectedEntity": "payment_gateway",
+      "expectedKeywords": ["Priya", "Aarav", "payment"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q9",
+      "question": "What is the plan for camera stream fallback in low light environments?",
+      "expectedEntity": "services/ticket-scanner",
+      "expectedKeywords": ["camera", "stream", "fallback"],
+      "acl": "team",
+      "expectedRestricted": false
+    },
+    {
+      "id": "q10",
+      "question": "What corporate credit card is used for the master AWS production account?",
+      "expectedEntity": "billing_master_card",
+      "expectedKeywords": ["4921", "corporate card"],
+      "acl": "leads_only",
+      "expectedRestricted": true,
+      "restrictedContent": "corporate card ending in 4921"
+    },
+    {
+      "id": "q11",
+      "question": "What is the annual contract cost and renewal date for FastCDN enterprise?",
+      "expectedEntity": "fastcdn_contract",
+      "expectedKeywords": ["14,200", "FastCDN"],
+      "acl": "leads_only",
+      "expectedRestricted": true,
+      "restrictedContent": "14,200/year"
+    },
+    {
+      "id": "q12",
+      "question": "Where are the master production encryption keys stored?",
+      "expectedEntity": "master_keys",
+      "expectedKeywords": ["encryption keys", "master"],
+      "acl": "team",
+      "expectedRestricted": false
+    }
+  ]
+}

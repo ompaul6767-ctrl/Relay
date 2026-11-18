@@ -7,6 +7,7 @@ import { Span } from '../models/Span.js';
 import { Case } from '../models/Case.js';
 import { logAudit } from '../models/Audit.js';
 import { splitIntoSpans } from '../services/spanSplitter.js';
+import { importGithubRepository } from '../services/githubConnector.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -177,6 +178,55 @@ router.post('/', authMiddleware, upload.single('file'), async (req, res, next) =
       secretsMaskedCount: splitResult.secretMaskStats.count,
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/cases/:id/sources/github
+ * Imports commits (latest 100) and issues (latest 50) from a public GitHub repository.
+ * Enforces SSRF regex validation, required consent tick, and idempotent re-import.
+ */
+router.post('/github', authMiddleware, async (req, res, next) => {
+  try {
+    const caseId = req.params.id;
+    const { repoUrl, consent, consentConfirmed, acl } = req.body || {};
+
+    const isConsented = consent === true || consentConfirmed === true || consent === 'true';
+    if (!isConsented) {
+      return res.status(400).json({
+        error: 'Consent required',
+        message: 'Consent confirmation is strictly required: "This is a public repository and I am authorised to use it".',
+      });
+    }
+
+    const result = await importGithubRepository({
+      caseId,
+      repoInput: repoUrl,
+      acl: acl || 'team',
+      consentConfirmed: isConsented,
+      user: req.user,
+    });
+
+    return res.status(201).json({
+      success: true,
+      source: result.source,
+      spansCount: result.spansCount,
+      commitsCount: result.commitsCount,
+      issuesCount: result.issuesCount,
+      secretsMaskedCount: result.secretsMaskedCount,
+      message: `Successfully imported ${result.commitsCount} commits and ${result.issuesCount} issues from ${result.source.name}.`,
+    });
+  } catch (err) {
+    if (err.status === 400 || err.message?.includes('Invalid GitHub') || err.message?.includes('required')) {
+      return res.status(400).json({ error: 'GitHub import validation failed', message: err.message });
+    }
+    if (err.message?.includes('not found or is private')) {
+      return res.status(404).json({ error: 'Repository not found', message: err.message });
+    }
+    if (err.message?.includes('rate limit')) {
+      return res.status(429).json({ error: 'GitHub rate limit', message: err.message });
+    }
     next(err);
   }
 });

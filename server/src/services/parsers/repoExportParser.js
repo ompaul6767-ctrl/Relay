@@ -75,6 +75,70 @@ function parseRepoMarkdown(markdownText, sourceNumber) {
       continue;
     }
 
+    // Detect compact commit format: sha date author: message (Section 6 format)
+    const compactCommitMatch = line.match(/^([a-f0-9]{7,40})\s+([0-9T:\-Z.]+)\s+([^:]+):\s*(.+)/i);
+    if (compactCommitMatch) {
+      const hash = compactCommitMatch[1];
+      const dateStr = compactCommitMatch[2];
+      const author = compactCommitMatch[3].trim();
+      const commitMsg = compactCommitMatch[4].trim();
+
+      let moduleName = '';
+      const moduleMatch = commitMsg.match(/^[a-z]+(?:\(([^)]+)\))?\s*:\s*(.+)/i);
+      if (moduleMatch && moduleMatch[1]) {
+        moduleName = moduleMatch[1].trim();
+      } else {
+        const colonMatch = commitMsg.match(/^([a-zA-Z0-9_\-\/]+)\s*:/);
+        if (colonMatch && !['commit', 'issue', 'feat', 'fix', 'refactor', 'perf', 'test', 'chore'].includes(colonMatch[1].toLowerCase())) {
+          moduleName = colonMatch[1].trim();
+        }
+      }
+
+      spans.push({
+        index: spanIndex,
+        stableId: `S${sourceNumber}.L${spanIndex}`,
+        text: line,
+        author,
+        timestamp: new Date(dateStr),
+        metadata: {
+          type: 'commit',
+          hash,
+          author,
+          commitMsg,
+          moduleName,
+        },
+      });
+      spanIndex++;
+      continue;
+    }
+
+    // Detect compact issue format: #n [state] title: first 300 characters of body (Section 6 format)
+    const compactIssueMatch = line.match(/^#([0-9]+)\s+\[([^\]]+)\]\s+([^:]+)(?::\s*(.*))?/i);
+    if (compactIssueMatch) {
+      const issueNumber = compactIssueMatch[1];
+      const issueState = compactIssueMatch[2].trim();
+      const issueTitle = compactIssueMatch[3].trim();
+      const issueDesc = (compactIssueMatch[4] || '').trim().slice(0, 300);
+
+      const issueText = `#${issueNumber} [${issueState}] ${issueTitle}${issueDesc ? `: ${issueDesc}` : ''}`;
+      spans.push({
+        index: spanIndex,
+        stableId: `S${sourceNumber}.L${spanIndex}`,
+        text: issueText,
+        author: 'GitHub Contributor',
+        timestamp: null,
+        metadata: {
+          type: 'issue',
+          issueNumber,
+          issueTitle,
+          issueState,
+          description: issueDesc,
+        },
+      });
+      spanIndex++;
+      continue;
+    }
+
     // Detect Issue header: ### Issue #42: Flaky redis cache...
     const issueMatch = line.match(/^###?\s*(?:Issue\s*#?([0-9]+))\s*:\s*(.+)/i);
     if (issueMatch) {

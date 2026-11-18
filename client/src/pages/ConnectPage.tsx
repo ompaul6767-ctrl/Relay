@@ -19,6 +19,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Lock,
+  GitBranch,
 } from 'lucide-react';
 
 export const ConnectPage: React.FC = () => {
@@ -30,7 +31,7 @@ export const ConnectPage: React.FC = () => {
   const [uploading, setUploading] = useState<boolean>(false);
 
   // New source form state
-  const [activeTab, setActiveTab] = useState<'upload' | 'paste'>('upload');
+  const [activeTab, setActiveTab] = useState<'upload' | 'paste' | 'github'>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pastedName, setPastedName] = useState<string>('');
   const [pastedType, setPastedType] = useState<string>('notes');
@@ -39,6 +40,12 @@ export const ConnectPage: React.FC = () => {
   const [consentConfirmed, setConsentConfirmed] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // GitHub connector state (Improvement 2)
+  const [githubRepoUrl, setGithubRepoUrl] = useState<string>('');
+  const [githubConsent, setGithubConsent] = useState<boolean>(false);
+  const [githubAcl, setGithubAcl] = useState<ACL>('team');
+  const [githubImporting, setGithubImporting] = useState<boolean>(false);
 
   // Preview drawer
   const [previewSource, setPreviewSource] = useState<Source | null>(null);
@@ -125,6 +132,41 @@ export const ConnectPage: React.FC = () => {
     }
   };
 
+  const handleGithubImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCase) return;
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!githubConsent) {
+      setErrorMsg('Consent required: "This is a public repository and I am authorised to use it".');
+      return;
+    }
+
+    if (!githubRepoUrl.trim()) {
+      setErrorMsg('Please specify a GitHub repository (e.g. owner/repo or https://github.com/owner/repo).');
+      return;
+    }
+
+    setGithubImporting(true);
+    try {
+      const res = await api.importGithubRepo(currentCase._id, {
+        repoUrl: githubRepoUrl.trim(),
+        consent: true,
+        acl: githubAcl,
+      });
+      setSuccessMsg(res.message || `Successfully imported GitHub repository ${githubRepoUrl}.`);
+      setGithubRepoUrl('');
+      setGithubConsent(false);
+      await fetchSources();
+      await refreshCase();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to import GitHub repository.');
+    } finally {
+      setGithubImporting(false);
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'tasks_csv':
@@ -191,6 +233,17 @@ export const ConnectPage: React.FC = () => {
             >
               Paste Raw Text
             </button>
+            <button
+              onClick={() => setActiveTab('github')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-colors ${
+                activeTab === 'github'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <GitBranch size={13} />
+              <span>Import from GitHub</span>
+            </button>
           </div>
 
           <div className="flex items-center space-x-1.5 text-xs text-slate-500">
@@ -213,6 +266,93 @@ export const ConnectPage: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'github' ? (
+          <form onSubmit={handleGithubImport} className="space-y-4">
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    GitHub Repository (Public):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGithubRepoUrl('ompaul6767-ctrl/Relay');
+                      setGithubConsent(true);
+                    }}
+                    className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 hover:underline flex items-center space-x-1"
+                  >
+                    <span>Use Demo: ompaul6767-ctrl/Relay</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <GitBranch size={15} />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. ompaul6767-ctrl/Relay or https://github.com/owner/repo"
+                    value={githubRepoUrl}
+                    onChange={(e) => setGithubRepoUrl(e.target.value)}
+                    className="w-full text-xs pl-9 pr-3 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-navy-950 focus:ring-2 focus:ring-teal-500 font-mono"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Relay reads up to 100 commits and 50 issues via GitHub REST API. Strict SSRF protection ensures only valid github.com URLs are queried.
+                </p>
+              </div>
+
+              {/* ACL Label and Consent Tick */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Access Label (ACL):
+                  </label>
+                  <select
+                    value={githubAcl}
+                    onChange={(e) => setGithubAcl(e.target.value as ACL)}
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-navy-900 focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="team">team (General team & incoming members)</option>
+                    <option value="leads_only">leads_only (Confidential / Lead-only visibility)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col justify-center">
+                  <label className="flex items-start space-x-2 cursor-pointer mt-2">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={githubConsent}
+                      onChange={(e) => setGithubConsent(e.target.checked)}
+                      className="mt-0.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                      "This is a public repository and I am authorised to use it."
+                    </span>
+                  </label>
+                  <span className="text-[11px] text-slate-400 ml-5">
+                    Strictly required by Section 6 specification.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  loading={githubImporting}
+                  disabled={!githubConsent || !githubRepoUrl.trim()}
+                  icon={<GitBranch size={14} />}
+                >
+                  {githubImporting ? 'Importing from GitHub...' : 'Import Commits & Issues'}
+                </Button>
+              </div>
+            </div>
+          </form>
+        ) : (
         <form onSubmit={handleFileUpload} className="space-y-4">
           {activeTab === 'upload' ? (
             <div>
@@ -339,6 +479,7 @@ export const ConnectPage: React.FC = () => {
             </Button>
           </div>
         </form>
+        )}
       </Card>
 
       {/* Connected Sources List */}

@@ -11,7 +11,7 @@ const sourceSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ['notes', 'tasks_csv', 'chat_json', 'repo_export'],
+      enum: ['notes', 'tasks_csv', 'chat_json', 'repo_export', 'interview'],
     },
     name: {
       type: String,

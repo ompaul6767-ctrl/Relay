@@ -111,6 +111,50 @@ const claimSchema = new mongoose.Schema(
     timelineDate: {
       type: Date,
     },
+    dateEstimated: {
+      type: Boolean,
+      default: false,
+    },
+    isFromInterview: {
+      type: Boolean,
+      default: false,
+    },
+    interviewAuthor: {
+      type: String,
+    },
+    originInterviewQuestionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'InterviewQuestion',
+    },
+    isStale: {
+      type: Boolean,
+      default: false,
+    },
+    stalenessStatus: {
+      type: String,
+      enum: ['fresh', 'superseded', 'possibly_stale'],
+      default: 'fresh',
+    },
+    stalenessReason: {
+      type: String,
+      default: '',
+    },
+    supersededByClaimId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Claim',
+    },
+    dismissedStaleness: {
+      dismissedBy: { type: String },
+      dismissedAt: { type: Date },
+      reason: { type: String },
+    },
+    embedding: {
+      type: [Number],
+      select: true,
+    },
+    embeddingModel: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

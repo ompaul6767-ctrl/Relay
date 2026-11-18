@@ -10,6 +10,7 @@ import { Version } from '../models/Version.js';
 import { Acknowledgement } from '../models/Acknowledgement.js';
 import { Audit, logAudit } from '../models/Audit.js';
 import { runReconstructionPipeline } from '../services/verification/engine.js';
+import { generateInterviewQuestions } from '../services/interviewEngine.js';
 import { env } from '../config/environment.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -161,6 +162,15 @@ router.post('/:id/reconstruct', authMiddleware, async (req, res, next) => {
     }));
 
     const insertedClaims = await Claim.insertMany(claimsToInsert);
+
+    // Auto-generate gap-driven interview questions for leaver (Improvement 1)
+    try {
+      await generateInterviewQuestions(caseId, {
+        departingMember: foundCase.departingMemberName,
+      });
+    } catch (e) {
+      console.warn('[Reconstruct] Auto interview generation note:', e.message);
+    }
 
     // Update case status to in_review if it was draft
     if (foundCase.status === 'draft') {

@@ -9,8 +9,10 @@ import { Claim } from '../models/Claim.js';
 import { Version } from '../models/Version.js';
 import { Acknowledgement } from '../models/Acknowledgement.js';
 import { Audit, logAudit } from '../models/Audit.js';
+import { InterviewQuestion } from '../models/InterviewQuestion.js';
 import { splitIntoSpans } from '../services/spanSplitter.js';
 import { runReconstructionPipeline } from '../services/verification/engine.js';
+import { generateInterviewQuestions } from '../services/interviewEngine.js';
 import { DEMO_USERS, signToken } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +38,7 @@ router.post('/seed', async (req, res, next) => {
       await Claim.deleteMany({ caseId: demoCase._id });
       await Version.deleteMany({ caseId: demoCase._id });
       await Acknowledgement.deleteMany({ caseId: demoCase._id });
+      await InterviewQuestion.deleteMany({ caseId: demoCase._id });
       await Audit.deleteMany({ caseId: demoCase._id });
       demoCase.status = 'in_review';
       demoCase.currentVersion = 0;
@@ -155,6 +158,9 @@ router.post('/seed', async (req, res, next) => {
     }));
 
     const insertedClaims = await Claim.insertMany(claimsToInsert);
+
+    // Auto-generate interview questions for gaps and conflicts
+    await generateInterviewQuestions(caseId, { departingMember: 'Aarav' });
 
     // 4. Pre-approve several Verified claims so handover preview is populated immediately
     // Note: Conflicting and Missing claims remain pending for judge review!

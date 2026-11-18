@@ -11,6 +11,7 @@ import { ConnectPage } from './pages/ConnectPage';
 import { ReconstructPage } from './pages/ReconstructPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { HandoverPage } from './pages/HandoverPage';
+import { InterviewPage } from './pages/InterviewPage';
 import { AuditPage } from './pages/AuditPage';
 import { LimitationsPage } from './pages/LimitationsPage';
 
@@ -27,6 +28,7 @@ export function App() {
                 <Route path="/connect" element={<ConnectPage />} />
                 <Route path="/reconstruct" element={<ReconstructPage />} />
                 <Route path="/verify" element={<ReconstructPage />} />
+                <Route path="/interview" element={<InterviewPage />} />
                 <Route path="/review" element={<ReviewPage />} />
                 <Route path="/handover" element={<HandoverPage />} />
                 <Route path="/audit" element={<AuditPage />} />

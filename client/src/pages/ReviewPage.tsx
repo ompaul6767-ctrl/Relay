@@ -27,6 +27,7 @@ import {
   Layers,
   Filter,
   ChevronLeft,
+  UserCheck,
 } from 'lucide-react';
 
 export const ReviewPage: React.FC = () => {
@@ -412,6 +413,22 @@ export const ReviewPage: React.FC = () => {
                     {claim.text}
                   </p>
 
+                  {(claim as any).isFromInterview && (
+                    <div className="mt-1.5 flex items-center space-x-1">
+                      <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
+                        From leaver interview ({(claim as any).interviewAuthor || 'Leaver'})
+                      </span>
+                    </div>
+                  )}
+
+                  {((claim as any).isStale || (claim as any).stalenessStatus === 'superseded' || (claim as any).stalenessStatus === 'possibly_stale') && (
+                    <div className="mt-1.5 flex items-center space-x-1">
+                      <span className="text-[10px] font-bold text-rose-800 dark:text-rose-300 bg-rose-100 dark:bg-rose-950 px-2 py-0.5 rounded-full">
+                        Needs re-review (Stale)
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2 text-[11px] text-slate-400">
                     <span>{claim.spanRefs?.length || 0} citations</span>
                     {claim.value && (
@@ -449,10 +466,23 @@ export const ReviewPage: React.FC = () => {
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 uppercase font-semibold">
                       {selectedClaim.type}
                     </span>
+                    {(selectedClaim as any).isFromInterview && (
+                      <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
+                        From leaver interview ({(selectedClaim as any).interviewAuthor || 'Leaver'})
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white pt-1">
                     {selectedClaim.text}
                   </h3>
+                  {((selectedClaim as any).isStale || (selectedClaim as any).stalenessStatus === 'superseded' || (selectedClaim as any).stalenessStatus === 'possibly_stale') && (
+                    <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs mt-2">
+                      <div className="font-bold flex items-center space-x-1">
+                        <AlertTriangle size={13} className="text-rose-600" />
+                        <span>Needs Re-Review: {(selectedClaim as any).stalenessReason || 'Evidence superseded by newer source'}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Status indicator */}

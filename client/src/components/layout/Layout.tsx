@@ -8,9 +8,10 @@ import { Link, useLocation } from 'react-router-dom';
 const MOBILE_STEPS = [
   { step: 1, label: '1. Connect', path: '/connect' },
   { step: 2, label: '2. Reconstruct', path: '/reconstruct' },
-  { step: 3, label: '3. Verify', path: '/verify' },
-  { step: 4, label: '4. Review', path: '/review' },
-  { step: 5, label: '5. Handover', path: '/handover' },
+  { step: 3, label: '3. Interview', path: '/interview' },
+  { step: 4, label: '4. Timeline', path: '/timeline' },
+  { step: 5, label: '5. Review', path: '/review' },
+  { step: 6, label: '6. Handover', path: '/handover' },
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

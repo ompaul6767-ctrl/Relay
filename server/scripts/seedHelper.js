@@ -4,9 +4,11 @@ import { Span } from '../src/models/Span.js';
 import { Claim } from '../src/models/Claim.js';
 import { Version } from '../src/models/Version.js';
 import { Acknowledgement } from '../src/models/Acknowledgement.js';
+import { InterviewQuestion } from '../src/models/InterviewQuestion.js';
 import { Audit, logAudit } from '../src/models/Audit.js';
 import { splitIntoSpans } from '../src/services/spanSplitter.js';
 import { runReconstructionPipeline } from '../src/services/verification/engine.js';
+import { generateInterviewQuestions } from '../src/services/interviewEngine.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -24,6 +26,7 @@ export async function seedDatabase() {
     await Claim.deleteMany({ caseId: demoCase._id });
     await Version.deleteMany({ caseId: demoCase._id });
     await Acknowledgement.deleteMany({ caseId: demoCase._id });
+    await InterviewQuestion.deleteMany({ caseId: demoCase._id });
     await Audit.deleteMany({ caseId: demoCase._id });
   } else {
     demoCase = await Case.create({
@@ -94,6 +97,9 @@ export async function seedDatabase() {
     caseId,
   }));
   await Claim.insertMany(claimsToInsert);
+
+  // Generate interview questions for gaps and conflicts
+  await generateInterviewQuestions(caseId, { departingMember: 'Aarav' });
 
   await Claim.updateMany(
     {

@@ -118,6 +118,18 @@ router.patch('/:id', authMiddleware, requireLead, async (req, res, next) => {
         claim.reviewDecision = 'approved';
         claim.reviewedBy = req.user.name;
         if (reviewNotes) claim.reviewNotes = reviewNotes;
+
+        // If this claim supersedes another claim (e.g. from leaver interview resolution)
+        if (claim.supersedes) {
+          await Claim.findByIdAndUpdate(claim.supersedes, {
+            $set: {
+              isStale: true,
+              stalenessStatus: 'superseded',
+              stalenessReason: `Superseded by attested interview claim (${claim._id})`,
+              supersededByClaimId: claim._id,
+            },
+          });
+        }
         break;
 
       case 'edit':

@@ -16,6 +16,8 @@ import {
   ChevronDown,
   Menu,
   X,
+  LogOut,
+  LogIn,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -28,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleMobileMenu,
   isMobileMenuOpen = false,
 }) => {
-  const { user, role, switchRole, isLoading } = useAuth();
+  const { user, role, switchRole, isLoading, isAuthenticated, logout } = useAuth();
   const { currentCase, loadDemoProject, isSeeding } = useCase();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -160,67 +162,94 @@ export const Navbar: React.FC<NavbarProps> = ({
               Load Demo Project
             </Button>
 
-            {/* Role Switcher */}
-            <div className="relative" ref={roleDropdownRef}>
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => setRoleDropdownOpen((prev) => !prev)}
-                className={`flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold shadow-sm transition-all ${currentRoleCfg.color}`}
-                aria-expanded={roleDropdownOpen}
-                aria-label="Switch user role"
-              >
-                <RoleIcon size={14} className="flex-shrink-0" />
-                <span className="hidden sm:inline">{currentRoleCfg.label}</span>
-                <span className="sm:hidden text-[11px] font-bold">
-                  {role === 'incoming_dev'
-                    ? 'DEV'
-                    : role === 'incoming_designer'
-                    ? 'DESIGN'
-                    : role === 'departing'
-                    ? 'LEAVER'
-                    : 'LEAD'}
-                </span>
-                <ChevronDown
-                  size={12}
-                  className={`opacity-70 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
+            {/* Role Switcher or Sign In */}
+            {isAuthenticated ? (
+              <>
+                <div className="relative" ref={roleDropdownRef}>
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => setRoleDropdownOpen((prev) => !prev)}
+                    className={`flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold shadow-sm transition-all ${currentRoleCfg.color}`}
+                    aria-expanded={roleDropdownOpen}
+                    aria-label="Switch user role"
+                  >
+                    <RoleIcon size={14} className="flex-shrink-0" />
+                    <span className="hidden sm:inline">{currentRoleCfg.label}</span>
+                    <span className="sm:hidden text-[11px] font-bold">
+                      {role === 'incoming_dev'
+                        ? 'DEV'
+                        : role === 'incoming_designer'
+                        ? 'DESIGN'
+                        : role === 'departing'
+                        ? 'LEAVER'
+                        : 'LEAD'}
+                    </span>
+                    <ChevronDown
+                      size={12}
+                      className={`opacity-70 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
 
-              {/* Role Dropdown Menu */}
-              {roleDropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-navy-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in-95">
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Switch Active Persona
-                  </div>
-                  {(['lead', 'incoming_dev', 'incoming_designer', 'departing'] as UserRole[]).map((r) => {
-                    const cfg = roleConfigs[r];
-                    const Icon = cfg.icon;
-                    const isActive = role === r;
-                    return (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => handleRoleChange(r)}
-                        className={`w-full text-left px-3 py-2 flex items-start space-x-2.5 text-xs transition-colors ${
-                          isActive
-                            ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-900 dark:text-teal-200 font-semibold'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <Icon size={15} className="mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="font-medium">{cfg.label}</div>
-                          <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-normal">
-                            {cfg.desc}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {/* Role Dropdown Menu */}
+                  {roleDropdownOpen && (
+                    <div className="absolute right-0 mt-1.5 w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-navy-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in-95">
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Switch Active Persona
+                      </div>
+                      {(['lead', 'incoming_dev', 'incoming_designer', 'departing'] as UserRole[]).map((r) => {
+                        const cfg = roleConfigs[r];
+                        const Icon = cfg.icon;
+                        const isActive = role === r;
+                        return (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => handleRoleChange(r)}
+                            className={`w-full text-left px-3 py-2 flex items-start space-x-2.5 text-xs transition-colors ${
+                              isActive
+                                ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-900 dark:text-teal-200 font-semibold'
+                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <Icon size={15} className="mt-0.5 flex-shrink-0" />
+                            <div>
+                              <div className="font-medium">{cfg.label}</div>
+                              <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-normal">
+                                {cfg.desc}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+                {/* Logout Button */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logout();
+                    navigate('/login');
+                  }}
+                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold transition-colors"
+                  title="Sign out of Relay"
+                  aria-label="Log out"
+                >
+                  <LogOut size={13} className="flex-shrink-0" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-xs font-semibold shadow-sm transition-colors"
+              >
+                <LogIn size={13} />
+                <span>Sign In</span>
+              </Link>
+            )}
 
             {/* Theme Toggle */}
             <button

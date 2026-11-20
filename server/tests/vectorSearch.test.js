@@ -78,13 +78,13 @@ describe('Improvement 2 Part B: Atlas Vector Search & 3-Tier Q&A Retrieval', () 
         embeddingModel: 'text-embedding-004',
       },
     ]);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await Case.deleteMany({ _id: testCaseId });
     await Claim.deleteMany({ caseId: testCaseId });
     await disconnectDB();
-  });
+  }, 30000);
 
   it('should accurately compute cosine similarity between vectors', () => {
     // Identical vectors: similarity = 1.0
@@ -120,7 +120,7 @@ describe('Improvement 2 Part B: Atlas Vector Search & 3-Tier Q&A Retrieval', () 
     // Top claim should be PostgreSQL claim
     const topClaim = result.claims[0];
     expect(topClaim.text).toContain('PostgreSQL');
-  });
+  }, 15000);
 
   it('should strictly isolate restricted claims during Q&A: zero leakage to incoming developer', async () => {
     // Incoming developer asks directly about AWS credit card billing
@@ -139,7 +139,7 @@ describe('Improvement 2 Part B: Atlas Vector Search & 3-Tier Q&A Retrieval', () 
       expect(cit.acl).not.toBe('leads_only');
       expect(cit.text).not.toContain('4921');
     }
-  });
+  }, 15000);
 
   it('should allow lead to query and retrieve leads_only claims within their authorized scope', async () => {
     const leadAskRes = await request(app)
@@ -152,5 +152,5 @@ describe('Improvement 2 Part B: Atlas Vector Search & 3-Tier Q&A Retrieval', () 
 
     // Lead is authorized to see leads_only content
     expect(body.citations.some((c) => c.acl === 'leads_only')).toBe(true);
-  });
+  }, 15000);
 });

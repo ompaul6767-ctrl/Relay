@@ -18,6 +18,8 @@ export const env = {
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   EMBEDDING_MODEL: process.env.EMBEDDING_MODEL || 'text-embedding-004',
   ALLOW_DEMO_LOGIN: process.env.ALLOW_DEMO_LOGIN !== 'false',
+  DEMO_USER_EMAIL: process.env.DEMO_USER_EMAIL || 'demo@techforce.dev',
+  DEMO_USER_PASSWORD: process.env.DEMO_USER_PASSWORD || 'Demo@1234',
   GITHUB_TOKEN: process.env.GITHUB_TOKEN || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
 };

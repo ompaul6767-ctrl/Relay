@@ -97,11 +97,11 @@ export const LandingPage: React.FC = () => {
     e.preventDefault();
     setLoginError(null);
     try {
-      const ok = await loginWithCredentials(emailInput, passwordInput);
-      if (ok) {
-        navigate('/review');
+      const res: any = await loginWithCredentials(emailInput, passwordInput);
+      if (res && (res.success || res === true)) {
+        navigate('/cases');
       } else {
-        setLoginError('Invalid credentials. Please use one of the demo accounts listed below.');
+        setLoginError(res?.error || 'Invalid credentials. Please use one of the demo accounts listed below.');
       }
     } catch (err: any) {
       setLoginError(err.message || 'Login failed');
@@ -160,11 +160,11 @@ export const LandingPage: React.FC = () => {
           <Button
             size="lg"
             variant="secondary"
-            onClick={() => setShowLoginForm(!showLoginForm)}
+            onClick={() => navigate('/login')}
             className="px-5 py-3 text-sm"
             icon={<Key size={16} />}
           >
-            {showLoginForm ? 'Hide Password Form' : 'Email & Password Login'}
+            Dedicated Login & Judge Access
           </Button>
         </div>
       </div>

@@ -7,7 +7,6 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
 import { CasesDashboard } from './pages/CasesDashboard';
 import { ConnectPage } from './pages/ConnectPage';
 import { ReconstructPage } from './pages/ReconstructPage';
@@ -28,7 +27,7 @@ export function App() {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<LoginPage />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
 
                 {/* Protected Routes (Require Authentication) */}
                 <Route element={<ProtectedRoute />}>

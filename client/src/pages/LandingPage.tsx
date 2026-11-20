@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-const PERSONA_CONFIGS: Record<UserRole, { label: string; icon: LucideIcon; desc: string }> = {
+export const PERSONA_CONFIGS: Record<UserRole, { label: string; icon: LucideIcon; desc: string }> = {
   lead: {
     label: 'Engineering Lead',
     icon: Shield,
@@ -303,7 +303,11 @@ export const LandingPage: React.FC = () => {
               Sign in with Email &amp; Password
             </p>
 
-            <form onSubmit={handleEmailPasswordSubmit} className="mt-5 space-y-3 lg:mt-4">
+            <form
+              onSubmit={handleEmailPasswordSubmit}
+              autoComplete="off"
+              className="mt-5 space-y-3 lg:mt-4"
+            >
               {loginError && (
                 <div
                   role="alert"
@@ -400,7 +404,7 @@ export const LandingPage: React.FC = () => {
                 <input
                   id="login-email"
                   type="email"
-                  autoComplete="username"
+                  autoComplete="off"
                   required
                   value={emailInput}
                   onChange={(event) => setEmailInput(event.target.value)}
@@ -419,7 +423,7 @@ export const LandingPage: React.FC = () => {
                   <input
                     id="login-password"
                     type={isPasswordVisible ? 'text' : 'password'}
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     required
                     value={passwordInput}
                     onChange={(event) => setPasswordInput(event.target.value)}

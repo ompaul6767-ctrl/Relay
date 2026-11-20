@@ -1,25 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useCase } from '../../context/CaseContext';
 import { useTheme } from '../../context/ThemeContext';
 import { UserRole } from '../../types';
-import { Button } from '../common/Button';
 import {
-  Shield,
-  Code2,
-  Palette,
   Sun,
   Moon,
-  Database,
   Sparkles,
-  ArrowRightLeft,
-  ChevronDown,
   Menu,
   X,
   LogOut,
   LogIn,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PERSONA_CONFIGS } from '../../pages/LandingPage';
 
 interface NavbarProps {
   onToggleMobileMenu?: () => void;
@@ -30,66 +24,37 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleMobileMenu,
   isMobileMenuOpen = false,
 }) => {
-  const { user, role, switchRole, isLoading, isAuthenticated, logout } = useAuth();
-  const { currentCase, loadDemoProject, isSeeding } = useCase();
+  const { user, role, isAuthenticated, logout } = useAuth();
+  const { currentCase } = useCase();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const roleDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close role dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target as Node)) {
-        setRoleDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const roleConfigs: Record<
-    UserRole,
-    { label: string; icon: any; color: string; desc: string }
-  > = {
-    lead: {
-      label: 'Engineering Lead',
-      icon: Shield,
-      color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border-amber-300 dark:border-amber-700',
-      desc: 'Full review & publishing authority',
-    },
-    incoming_dev: {
-      label: 'Incoming Developer',
-      icon: Code2,
-      color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/60 dark:text-teal-400 border-teal-300 dark:border-teal-700',
-      desc: 'Tech stack, code, runtime & deploy focus',
-    },
-    incoming_designer: {
-      label: 'Incoming Designer',
-      icon: Palette,
-      color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700',
-      desc: 'Design system, Figma & assets focus',
-    },
-    departing: {
-      label: 'Departing Member',
-      icon: ArrowRightLeft,
-      color: 'text-slate-600 bg-slate-50 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700',
-      desc: 'Owner of unassigned tasks & historical knowledge',
-    },
+  const roleBadgeStyles: Record<UserRole, string> = {
+    lead:
+      'text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 border-amber-300 dark:border-amber-700',
+    incoming_dev:
+      'text-teal-600 bg-teal-50 dark:bg-teal-950/60 dark:text-teal-400 border-teal-300 dark:border-teal-700',
+    incoming_designer:
+      'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700',
+    departing:
+      'text-slate-600 bg-slate-50 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700',
   };
 
-  const currentRoleCfg = roleConfigs[role] || roleConfigs.lead;
-  const RoleIcon = currentRoleCfg.icon;
-
-  const handleRoleChange = async (newRole: UserRole) => {
-    setRoleDropdownOpen(false);
-    await switchRole(newRole);
-  };
+  const userRole = user?.role ?? role;
+  const userRoleConfig = PERSONA_CONFIGS[userRole];
+  const PersonaIcon = userRoleConfig.icon;
+  const userName = user?.name?.trim() ?? '';
+  const userInitials = userName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-navy-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Mobile Menu Button */}
           <div className="flex items-center space-x-2 sm:space-x-4">
@@ -145,93 +110,41 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {/* Right Navigation & Role Switcher */}
+          {/* Right Navigation */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Quick Load Demo Button */}
-            <Button
-              size="sm"
-              variant="outline"
-              loading={isSeeding}
-              onClick={async () => {
-                const caseId = await loadDemoProject();
-                if (caseId) navigate(`/review`);
-              }}
-              className="hidden md:inline-flex text-xs font-semibold border-teal-300 text-teal-800 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300 dark:hover:bg-teal-950"
-              icon={<Database size={13} />}
-            >
-              Load Demo Project
-            </Button>
-
-            {/* Role Switcher or Sign In */}
+            {/* User Info or Sign In */}
             {isAuthenticated ? (
               <>
-                <div className="relative" ref={roleDropdownRef}>
-                  <button
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => setRoleDropdownOpen((prev) => !prev)}
-                    className={`flex items-center space-x-1.5 sm:space-x-2 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-semibold shadow-sm transition-all ${currentRoleCfg.color}`}
-                    aria-expanded={roleDropdownOpen}
-                    aria-label="Switch user role"
-                  >
-                    <RoleIcon size={14} className="flex-shrink-0" />
-                    <span className="hidden sm:inline">{currentRoleCfg.label}</span>
-                    <span className="sm:hidden text-[11px] font-bold">
-                      {role === 'incoming_dev'
-                        ? 'DEV'
-                        : role === 'incoming_designer'
-                        ? 'DESIGN'
-                        : role === 'departing'
-                        ? 'LEAVER'
-                        : 'LEAD'}
+                <div
+                  role="group"
+                  aria-label="Signed-in user"
+                  tabIndex={0}
+                  className="glass-control flex min-w-0 items-center gap-2 rounded-xl px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-navy-900"
+                >
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-teal-300/70 bg-teal-100/80 text-sm font-semibold text-teal-800 dark:border-teal-700/70 dark:bg-teal-950/60 dark:text-teal-200">
+                    {userInitials ? userInitials : <PersonaIcon size={18} />}
+                  </div>
+                  <div className="hidden min-w-0 max-w-[180px] flex-col md:flex">
+                    <span className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {userName || userRoleConfig.label}
                     </span>
-                    <ChevronDown
-                      size={12}
-                      className={`opacity-70 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-
-                  {/* Role Dropdown Menu */}
-                  {roleDropdownOpen && (
-                    <div className="absolute right-0 mt-1.5 w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-navy-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in-95">
-                      <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        Switch Active Persona
-                      </div>
-                      {(['lead', 'incoming_dev', 'incoming_designer', 'departing'] as UserRole[]).map((r) => {
-                        const cfg = roleConfigs[r];
-                        const Icon = cfg.icon;
-                        const isActive = role === r;
-                        return (
-                          <button
-                            key={r}
-                            type="button"
-                            onClick={() => handleRoleChange(r)}
-                            className={`w-full text-left px-3 py-2 flex items-start space-x-2.5 text-xs transition-colors ${
-                              isActive
-                                ? 'bg-teal-50 dark:bg-teal-950/50 text-teal-900 dark:text-teal-200 font-semibold'
-                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}
-                          >
-                            <Icon size={15} className="mt-0.5 flex-shrink-0" />
-                            <div>
-                              <div className="font-medium">{cfg.label}</div>
-                              <div className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 font-normal">
-                                {cfg.desc}
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                    <span className="truncate text-xs text-slate-500 dark:text-slate-400">
+                      {user?.email || userRoleConfig.label}
+                    </span>
+                  </div>
                 </div>
+                <span
+                  className={`hidden items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold lg:inline-flex ${roleBadgeStyles[userRole]}`}
+                >
+                  {userRoleConfig.label}
+                </span>
 
                 {/* Logout Button */}
                 <button
                   type="button"
                   onClick={async () => {
                     await logout();
-                    navigate('/login');
+                    navigate('/', { replace: true });
                   }}
                   className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold transition-colors"
                   title="Sign out of Relay"
@@ -243,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             ) : (
               <Link
-                to="/login"
+                to="/"
                 className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-xs font-semibold shadow-sm transition-colors"
               >
                 <LogIn size={13} />

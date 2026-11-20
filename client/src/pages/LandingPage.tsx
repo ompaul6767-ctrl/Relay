@@ -141,11 +141,11 @@ export const LandingPage: React.FC = () => {
     event.preventDefault();
     setLoginError(null);
     try {
-      const ok = await loginWithCredentials(emailInput, passwordInput);
-      if (ok) {
-        navigate('/review');
+      const res: any = await loginWithCredentials(emailInput, passwordInput);
+      if (res && (res.success || res === true)) {
+        navigate('/cases');
       } else {
-        setLoginError('Invalid credentials. Please use one of the demo accounts listed below.');
+        setLoginError(res?.error || 'Invalid credentials. Please use one of the demo accounts listed below.');
       }
     } catch (err: any) {
       setLoginError(err.message || 'Login failed');
@@ -153,35 +153,58 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="relative mx-auto flex min-h-full w-full max-w-7xl flex-col py-3 sm:py-4 lg:py-1">
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className="absolute right-0 top-1 inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 transition-colors duration-200 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 dark:text-slate-300 dark:hover:bg-slate-800"
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        title="Toggle theme"
-      >
-        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
+    <div className="max-w-5xl mx-auto space-y-12 py-6">
+      {/* Hero Section */}
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 text-xs font-semibold">
+          <Sparkles size={14} />
+          <span>Hackathon Build • Team Tech Force (We Code Coders)</span>
+        </div>
 
-      <div className="grid flex-1 grid-cols-1 overflow-visible rounded-3xl border border-slate-200/80 bg-white shadow-xl shadow-navy-900/10 dark:border-slate-800 dark:bg-navy-900 lg:grid-cols-2 lg:overflow-hidden">
-        <section className="min-w-0 bg-gradient-to-br from-teal-50 via-white to-teal-100/80 p-4 dark:from-navy-900 dark:via-navy-900 dark:to-teal-950/60 sm:p-5 lg:p-2 xl:p-2">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-navy-900 via-teal-700 to-teal-500 text-white shadow-sm shadow-teal-900/20 lg:h-8 lg:w-8">
-              <Sparkles size={19} />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold tracking-tight text-navy-900 dark:text-white lg:text-lg">Relay</span>
-                <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-teal-800 dark:bg-teal-950 dark:text-teal-300">
-                  Handover
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                Evidence-Linked Knowledge Transfer
-              </p>
-            </div>
-          </div>
+        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-navy-900 dark:text-white max-w-3xl mx-auto leading-tight">
+          Prevent Critical Knowledge From Leaving With People
+        </h1>
+
+        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          Relay ingests project sources and GitHub repos, extracts atomic claims, links every fact to verbatim evidence, resolves conflicts on dated timelines, conducts gap-driven leaver interviews, and delivers role-appropriate handovers with zero unverified assumptions.
+        </p>
+
+        {/* Primary Demo Action Bar */}
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+          <Button
+            size="lg"
+            variant="primary"
+            loading={isSeeding}
+            onClick={handleLoadDemo}
+            className="px-6 py-3 text-sm font-semibold shadow-lg shadow-teal-900/10"
+            icon={<Database size={18} />}
+          >
+            Load Demo Project ("Campus Event Portal")
+          </Button>
+
+          {currentCase && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate('/review')}
+              className="px-6 py-3 text-sm"
+              icon={<ArrowRight size={18} />}
+            >
+              Open Active Workspace
+            </Button>
+          )}
+
+          <Button
+            size="lg"
+            variant="secondary"
+            onClick={() => setShowLoginForm(!showLoginForm)}
+            className="px-5 py-3 text-sm"
+            icon={<Key size={16} />}
+          >
+            {showLoginForm ? 'Hide Password Form' : 'Email & Password Login'}
+          </Button>
+        </div>
+      </div>
 
           <div className="mt-4 lg:mt-2">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-teal-800 dark:border-teal-800 dark:bg-teal-950/60 dark:text-teal-300 lg:px-2 lg:py-0.5 lg:text-[9px]">

@@ -2,9 +2,21 @@ import mongoose from 'mongoose';
 import { env } from './environment.js';
 
 let mongodInstance = null;
+let primaryConnectionFailed = false;
 
 export async function connectDB() {
   if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  // If primary connection already failed in this process (e.g. IP not whitelisted on Atlas),
+  // skip the 6-second timeout and immediately use fast in-memory MongoDB
+  if (primaryConnectionFailed) {
+    if (!mongodInstance) {
+      const { MongoMemoryServer } = await import('mongodb-memory-server');
+      mongodInstance = await MongoMemoryServer.create();
+    }
+    await mongoose.connect(mongodInstance.getUri());
     return mongoose.connection;
   }
 
@@ -12,7 +24,9 @@ export async function connectDB() {
 
   if (!uri || uri.includes('<db_username>')) {
     if (uri && uri.includes('<db_username>')) {
-      console.warn('[Database] Notice: MONGODB_URI contains placeholder "<db_username>". Please replace it with your Atlas database username. Falling back to embedded in-memory MongoDB for uninterrupted operation.');
+      console.warn(
+        '[Database] Notice: MONGODB_URI contains placeholder "<db_username>". Falling back to embedded in-memory MongoDB.'
+      );
     } else {
       console.log('[Database] No MONGODB_URI provided. Initializing in-memory MongoDB instance...');
     }
@@ -28,12 +42,27 @@ export async function connectDB() {
   }
 
   try {
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 3000 });
     console.log(`[Database] MongoDB connected successfully to: ${uri.replace(/\/\/.*@/, '//<credentials>@')}`);
     return mongoose.connection;
   } catch (error) {
-    console.error('[Database] MongoDB connection failed:', error.message);
-    throw error;
+    primaryConnectionFailed = true;
+    console.warn(
+      `[Database] Primary MongoDB connection failed (${error.message}). Falling back to embedded in-memory MongoDB...`
+    );
+    try {
+      if (!mongodInstance) {
+        const { MongoMemoryServer } = await import('mongodb-memory-server');
+        mongodInstance = await MongoMemoryServer.create();
+      }
+      const fallbackUri = mongodInstance.getUri();
+      await mongoose.connect(fallbackUri);
+      console.log(`[Database] Fallback in-memory MongoDB connected successfully at: ${fallbackUri}`);
+      return mongoose.connection;
+    } catch (memErr) {
+      console.error('[Database] Both primary and fallback MongoDB connections failed:', memErr.message);
+      throw error;
+    }
   }
 }
 

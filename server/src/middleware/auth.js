@@ -3,12 +3,23 @@ import { env } from '../config/environment.js';
 
 export const ROLE_ACLS = {
   lead: ['team', 'leads_only', 'owner_only'],
+  admin: ['team', 'leads_only', 'owner_only'],
   departing: ['team', 'owner_only'],
   incoming_dev: ['team'],
   incoming_designer: ['team'],
+  member: ['team'],
 };
 
 export const DEMO_USERS = {
+  demo_judge: {
+    id: 'user_demo_judge',
+    name: 'Judge / Reviewer (Tech Force)',
+    email: env.DEMO_USER_EMAIL || 'demo@techforce.dev',
+    role: 'lead',
+    title: 'Platform Administrator & Lead Reviewer',
+    demoPassword: env.DEMO_USER_PASSWORD || 'Demo@1234',
+    aliases: ['judge@relay.demo', 'admin@techforce.dev'],
+  },
   lead: {
     id: 'user_lead_maya',
     name: 'Maya',
@@ -62,12 +73,17 @@ export function signToken(user) {
   );
 }
 
+/**
+ * Core Authentication Middleware:
+ * Validates JWT Bearer token and attaches req.user.
+ * Returns clean 401 Unauthorized JSON response if missing or invalid.
+ */
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
-      error: 'Authentication required',
-      message: 'Missing or invalid Authorization header. Please log in.',
+      error: 'Unauthorized',
+      message: 'Authentication required. Missing or invalid Authorization header.',
     });
   }
 
@@ -75,18 +91,20 @@ export function authMiddleware(req, res, next) {
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET);
     req.user = decoded;
-    // Ensure allowedAcls is populated based on role
     if (!req.user.allowedAcls) {
       req.user.allowedAcls = ROLE_ACLS[req.user.role] || ['team'];
     }
     next();
   } catch (err) {
     return res.status(401).json({
-      error: 'Invalid token',
+      error: 'Unauthorized',
       message: 'Token has expired or is invalid. Please log in again.',
     });
   }
 }
+
+// Alias for explicit verifyAuth terminology
+export const verifyAuth = authMiddleware;
 
 // Optional auth: if token present, attach user; otherwise default to public / guest lead for seamless demo if needed
 export function optionalAuth(req, res, next) {
@@ -113,7 +131,7 @@ export function optionalAuth(req, res, next) {
 export function requireRole(allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
     }
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
@@ -125,4 +143,4 @@ export function requireRole(allowedRoles) {
   };
 }
 
-export const requireLead = requireRole(['lead']);
+export const requireLead = requireRole(['lead', 'admin']);

@@ -19,7 +19,7 @@ describe('Improvement 3: Conflict Timeline & Staleness Detection', () => {
     demoCaseId = String(demoCase._id);
     leadToken = signToken(DEMO_USERS.lead);
     devToken = signToken(DEMO_USERS.incoming_dev);
-  }, 30000);
+  }, 60000);
 
   afterAll(async () => {
     await disconnectDB();

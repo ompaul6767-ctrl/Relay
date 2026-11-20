@@ -67,6 +67,18 @@ export async function apiRequest<T = any>(
         data = {};
       }
 
+      if (response.status === 401) {
+        localStorage.removeItem('relay_token');
+        localStorage.removeItem('relay_user');
+        localStorage.removeItem('relay_role');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('relay:unauthorized'));
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+            window.location.href = '/login';
+          }
+        }
+      }
+
       if (!response.ok) {
         const errorMsg =
           data.message ||
@@ -122,9 +134,13 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  logout: () =>
+    apiRequest<{ success: boolean; message: string }>('/auth/logout', {
+      method: 'POST',
+    }),
   getDemoAccounts: () =>
     apiRequest<{ enabled: boolean; accounts: any[] }>('/auth/demo-accounts'),
-  getMe: () => apiRequest('/auth/me'),
+  getMe: () => apiRequest<{ success: boolean; user: any }>('/auth/me'),
 
   // Cases
   getCases: () => apiRequest<{ cases: any[] }>('/cases'),

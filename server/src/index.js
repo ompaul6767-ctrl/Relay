@@ -3,11 +3,13 @@ import { connectDB } from './config/database.js';
 import { env } from './config/environment.js';
 import { Case } from './models/Case.js';
 import { seedDatabase } from '../scripts/seedHelper.js';
+import { seedDemoUsers } from './services/seedUsers.js';
 
 async function startServer() {
   try {
     console.log('[Relay] Connecting to database...');
     await connectDB();
+    await seedDemoUsers();
 
     app.listen(env.PORT, () => {
       console.log(`===============================================`);

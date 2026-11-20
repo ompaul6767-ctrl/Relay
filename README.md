@@ -7,10 +7,9 @@
 
 ---
 
-### 🌐 Live Production Deployments & Deliverables
+### 🌐 Live Production Deployments & Access
 - **Live Web Application (Vercel):** [https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/)
 - **Dedicated Login & Judge Portal:** [https://client-cxv9.vercel.app/login](https://client-cxv9.vercel.app/login) (One-click judge credentials: `demo@techforce.dev` / `Demo@1234`)
-- **Final Round 3 Project Presentation PDF:** [Round3_Project_Document_Relay_TechForce.pdf](./Round3_Project_Document_Relay_TechForce.pdf) (8-page complete document)
 - **Live Backend API (Render):** [https://relay-ygyb.onrender.com](https://relay-ygyb.onrender.com)
 - **API Health Check:** [https://relay-ygyb.onrender.com/api/health](https://relay-ygyb.onrender.com/api/health)
 - **Public GitHub Repository:** [https://github.com/ompaul6767-ctrl/Relay](https://github.com/ompaul6767-ctrl/Relay)

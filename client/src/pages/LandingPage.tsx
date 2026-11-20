@@ -1,21 +1,47 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/common/Button';
-import { PERSONA_CONFIGS, PERSONA_ORDER } from '../constants/personas';
 import { UserRole } from '../types';
 import { useNavigate } from 'react-router-dom';
 import {
+  ArrowRightLeft,
   ArrowRight,
   Check,
   ChevronDown,
+  Code2,
   Eye,
   EyeOff,
   LockKeyhole,
-  Moon,
+  Palette,
+  Shield,
   Sparkles,
-  Sun,
+  type LucideIcon,
 } from 'lucide-react';
+
+const PERSONA_CONFIGS: Record<UserRole, { label: string; icon: LucideIcon; desc: string }> = {
+  lead: {
+    label: 'Engineering Lead',
+    icon: Shield,
+    desc: 'Full review & publishing authority',
+  },
+  departing: {
+    label: 'Departing Member',
+    icon: ArrowRightLeft,
+    desc: 'Owner of unassigned tasks & historical knowledge',
+  },
+  incoming_dev: {
+    label: 'Incoming Developer',
+    icon: Code2,
+    desc: 'Tech stack, code, runtime & deploy focus',
+  },
+  incoming_designer: {
+    label: 'Incoming Designer',
+    icon: Palette,
+    desc: 'Design system, Figma & assets focus',
+  },
+};
+
+const PERSONA_ORDER: UserRole[] = ['lead', 'incoming_dev', 'incoming_designer', 'departing'];
 
 interface DemoAccount {
   role: UserRole;
@@ -63,7 +89,6 @@ const demoAccounts: DemoAccount[] = [
 
 export const LandingPage: React.FC = () => {
   const { loginWithCredentials, isLoading: authLoading } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [emailInput, setEmailInput] = useState('');
@@ -153,72 +178,39 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 py-6">
-      {/* Hero Section */}
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 text-xs font-semibold">
-          <Sparkles size={14} />
-          <span>Hackathon Build • Team Tech Force (We Code Coders)</span>
-        </div>
-
-        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-navy-900 dark:text-white max-w-3xl mx-auto leading-tight">
-          Prevent Critical Knowledge From Leaving With People
-        </h1>
-
-        <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Relay ingests project sources and GitHub repos, extracts atomic claims, links every fact to verbatim evidence, resolves conflicts on dated timelines, conducts gap-driven leaver interviews, and delivers role-appropriate handovers with zero unverified assumptions.
-        </p>
-
-        {/* Primary Demo Action Bar */}
-        <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
-          <Button
-            size="lg"
-            variant="primary"
-            loading={isSeeding}
-            onClick={handleLoadDemo}
-            className="px-6 py-3 text-sm font-semibold shadow-lg shadow-teal-900/10"
-            icon={<Database size={18} />}
-          >
-            Load Demo Project ("Campus Event Portal")
-          </Button>
-
-          {currentCase && (
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate('/review')}
-              className="px-6 py-3 text-sm"
-              icon={<ArrowRight size={18} />}
-            >
-              Open Active Workspace
-            </Button>
-          )}
-
-          <Button
-            size="lg"
-            variant="secondary"
-            onClick={() => setShowLoginForm(!showLoginForm)}
-            className="px-5 py-3 text-sm"
-            icon={<Key size={16} />}
-          >
-            {showLoginForm ? 'Hide Password Form' : 'Email & Password Login'}
-          </Button>
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:py-10">
+      <div className="grid grid-cols-1 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-xl shadow-navy-900/10 dark:border-slate-800 dark:bg-navy-900 lg:grid-cols-2">
+        <section className="min-w-0 bg-gradient-to-br from-teal-50 via-white to-teal-100/80 p-4 dark:from-navy-900 dark:via-navy-900 dark:to-teal-950/60 sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-navy-900 via-teal-700 to-teal-500 text-white shadow-sm shadow-teal-900/20">
+              <Sparkles size={19} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold tracking-tight text-navy-900 dark:text-white">Relay</span>
+                <span className="rounded bg-teal-100 px-1.5 py-0.5 text-xs font-semibold uppercase text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+                  Handover
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Evidence-Linked Knowledge Transfer
+              </p>
+            </div>
+          </div>
 
           <div className="mt-4 lg:mt-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-teal-800 dark:border-teal-800 dark:bg-teal-950/60 dark:text-teal-300 lg:px-2 lg:py-0.5 lg:text-[9px]">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-teal-800 dark:border-teal-800 dark:bg-teal-950/60 dark:text-teal-300">
               <Sparkles size={12} />
               Evidence-Linked Knowledge Transfer
             </div>
-            <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-navy-900 dark:text-white sm:text-4xl lg:mt-1 lg:text-[21px] xl:text-[21px]">
+            <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-navy-900 dark:text-white lg:text-4xl">
               Prevent Critical Knowledge
               <span className="block text-teal-700 dark:text-teal-400">From Leaving With People</span>
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 lg:mt-1 lg:text-[11px] lg:leading-snug">
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-700 dark:text-slate-300">
               Relay ingests project sources and GitHub repos, extracts atomic claims, links every fact to verbatim evidence, resolves conflicts on dated timelines, conducts gap-driven leaver interviews, and delivers role-appropriate handovers with zero unverified assumptions.
             </p>
-            <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400 lg:mt-1 lg:text-[10px]">
+            <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
               <LockKeyhole size={15} className="mt-0.5 shrink-0 text-teal-700 dark:text-teal-400" />
               <span>
                 Sensitive leads-only notes never leak to incoming roles in search, Q&amp;A, or timeline.
@@ -226,8 +218,8 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="mt-3 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-navy-950/70 sm:p-4 lg:mt-0 lg:p-1.5">
-            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+          <div className="mt-3 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-navy-950/70 sm:p-4">
+            <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span className="font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300">
                 For judges
               </span>
@@ -242,7 +234,7 @@ export const LandingPage: React.FC = () => {
                 return (
                   <article
                     key={account.role}
-                    className={`flex min-w-0 flex-col rounded-xl border p-3 transition-all duration-200 lg:p-2 ${
+                    className={`flex min-w-0 flex-col rounded-xl border p-3 transition-all duration-200 sm:p-4 ${
                       isSelected
                         ? 'border-teal-500 bg-teal-50/80 shadow-sm ring-2 ring-teal-500/20 dark:bg-teal-950/40'
                         : 'border-slate-200 bg-white/90 hover:border-teal-300 hover:shadow-sm dark:border-slate-700 dark:bg-navy-900/90 dark:hover:border-teal-700'
@@ -254,25 +246,25 @@ export const LandingPage: React.FC = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-white lg:text-xs">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                             {account.name}
                           </h3>
                           {isSelected && (
-                            <span className="rounded-full bg-teal-700 px-2 py-0.5 text-[9px] font-bold text-white dark:bg-teal-600">
+                            <span className="rounded-full bg-teal-700 px-2 py-0.5 text-xs font-bold text-white dark:bg-teal-600">
                               Selected
                             </span>
                           )}
                         </div>
-                        <span className="mt-1 inline-flex max-w-full rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold leading-tight text-slate-700 dark:bg-slate-800 dark:text-slate-200 lg:mt-0.5">
+                        <span className="mt-1 inline-flex max-w-full rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold leading-tight text-slate-700 dark:bg-slate-800 dark:text-slate-200 lg:mt-0.5">
                           {PERSONA_CONFIGS[account.role].label}
                         </span>
-                        <p className="mt-1 break-words text-[10px] leading-snug text-slate-500 dark:text-slate-400 lg:mt-0.5 lg:text-[9px]">
+                        <p className="mt-1 break-words text-xs leading-snug text-slate-500 dark:text-slate-400 lg:mt-0.5">
                           {account.title}
                         </p>
                       </div>
                     </div>
 
-                    <p className="mt-1.5 break-words text-[11px] leading-snug text-slate-700 dark:text-slate-300 lg:mt-0.5 lg:text-[10px] lg:leading-tight">
+                    <p className="mt-1.5 break-words text-xs leading-snug text-slate-700 dark:text-slate-300 lg:mt-0.5 lg:leading-tight">
                       {account.description}
                     </p>
 
@@ -280,7 +272,7 @@ export const LandingPage: React.FC = () => {
                       type="button"
                       onClick={() => selectPersona(account.role)}
                       aria-pressed={isSelected}
-                      className={`mt-2 min-h-8 w-full rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-navy-900 lg:mt-1.5 lg:min-h-6 lg:py-0.5 lg:text-[10px] ${
+                      className={`mt-2 min-h-8 w-full rounded-lg border px-2 py-1 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-navy-900 lg:mt-1.5 ${
                         isSelected
                           ? 'border-teal-700 bg-teal-700 text-white hover:bg-teal-800 dark:border-teal-600 dark:bg-teal-600 dark:hover:bg-teal-500'
                           : 'border-slate-300 bg-white text-slate-700 hover:border-teal-400 hover:bg-teal-50 dark:border-slate-600 dark:bg-navy-900 dark:text-slate-200 dark:hover:border-teal-700 dark:hover:bg-teal-950/40'
@@ -293,7 +285,7 @@ export const LandingPage: React.FC = () => {
               })}
             </div>
 
-            <p className="mt-2 text-center text-[10px] text-slate-600 dark:text-slate-400 lg:mt-1">
+            <p className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400 lg:mt-1">
               These are demo accounts for judges. No real data.
             </p>
           </div>
@@ -301,7 +293,7 @@ export const LandingPage: React.FC = () => {
 
         <section className="flex min-w-0 flex-col justify-center bg-white p-4 dark:bg-navy-900 sm:p-6 lg:p-4 xl:p-6">
           <div className="mx-auto w-full max-w-md">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal-800 dark:text-teal-300">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800 dark:text-teal-300">
               Secure workspace access
             </p>
             <h2 className="mt-2 text-3xl font-bold tracking-tight text-navy-900 dark:text-white">
@@ -352,7 +344,7 @@ export const LandingPage: React.FC = () => {
 
                 {isPersonaOpen && (
                   <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-navy-900">
-                    <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Switch Active Persona
                     </div>
                     <div

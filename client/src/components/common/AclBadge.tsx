@@ -23,7 +23,7 @@ export const AclBadge: React.FC<AclBadgeProps> = ({ acl, size = 'md', className 
           label: 'Owner Only',
           icon: Key,
           classes:
-            'bg-indigo-100 text-indigo-900 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-200 dark:border-indigo-700',
+            'bg-teal-50 text-teal-900 border-teal-200 dark:bg-teal-950/60 dark:text-teal-200 dark:border-teal-800',
         };
       case 'team':
       default:
@@ -41,7 +41,7 @@ export const AclBadge: React.FC<AclBadgeProps> = ({ acl, size = 'md', className 
 
   return (
     <span
-      className={`inline-flex items-center space-x-1 font-medium rounded border ${sizeClasses} ${classes} ${className}`}
+      className={`inline-flex items-center space-x-1 font-medium rounded-full border ${sizeClasses} ${classes} ${className}`}
       title={`Access Control: ${label}`}
     >
       <Icon size={12} className="flex-shrink-0" />

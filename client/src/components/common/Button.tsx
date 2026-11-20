@@ -19,7 +19,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none rounded-lg';
+    'inline-flex items-center justify-center font-medium transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/60 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none rounded-xl';
 
   const sizeStyles = {
     sm: 'text-xs px-3 py-1.5 gap-1.5',
@@ -29,17 +29,17 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-teal-600 text-white hover:bg-teal-700 active:bg-teal-800 focus:ring-teal-500 shadow-sm shadow-teal-900/10',
+      'bg-teal-600 text-white shadow-sm shadow-teal-900/15 ring-1 ring-inset ring-white/15 hover:bg-teal-700 active:bg-teal-800 focus-visible:ring-teal-400/60',
     secondary:
-      'bg-navy-900 text-white hover:bg-navy-800 active:bg-navy-950 focus:ring-navy-600 dark:bg-navy-800 dark:hover:bg-navy-700',
+      'glass-control text-slate-800 hover:text-slate-950 active:brightness-95 dark:text-slate-100 dark:hover:text-white',
     outline:
-      'border border-slate-300 text-slate-700 hover:bg-slate-50 focus:ring-teal-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800',
+      'glass-control text-slate-700 hover:text-slate-950 focus-visible:ring-teal-400/60 dark:text-slate-200 dark:hover:text-white',
     danger:
-      'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus:ring-rose-500 shadow-sm shadow-rose-900/10',
+      'bg-red-600 text-white shadow-sm shadow-red-900/10 hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-500',
     ghost:
-      'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-400 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
+      'text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-slate-100',
     success:
-      'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 focus:ring-emerald-500 shadow-sm shadow-emerald-900/10',
+      'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 focus-visible:ring-emerald-500 shadow-sm shadow-emerald-900/10',
   }[variant];
 
   return (

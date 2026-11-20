@@ -50,7 +50,7 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
       step: 1,
       id: 'connect',
       title: '1. Connect',
-      description: 'Ingest & mask sources',
+      description: 'Ingest & mask secrets',
       path: '/connect',
       icon: Link2,
       countBadge: stats.sourceCount ? `${stats.sourceCount} sources` : '0',
@@ -63,12 +63,13 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
       path: '/reconstruct',
       icon: Cpu,
       countBadge: stats.claimCount ? `${stats.claimCount} claims` : 'Ready',
+      badgeColor: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200',
     },
     {
       step: 3,
       id: 'interview',
       title: '3. Interview',
-      description: 'Gap-driven leaver Q&A',
+      description: 'Gap-driven leaver interview',
       path: '/interview',
       icon: UserCheck,
       countBadge: stats.gapsCount ? `${stats.gapsCount} gaps` : 'Interview',
@@ -78,21 +79,21 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
       step: 4,
       id: 'timeline',
       title: '4. Timeline',
-      description: 'Conflict & staleness map',
+      description: 'Conflict & stale information',
       path: '/timeline',
       icon: GitBranch,
       countBadge: stats.conflictsCount ? `${stats.conflictsCount} conflicts` : 'Timeline',
-      badgeColor: stats.conflictsCount ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : undefined,
+      badgeColor: stats.conflictsCount ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200' : undefined,
     },
     {
       step: 5,
       id: 'review',
       title: '5. Review',
-      description: 'Lead approve, edit, resolve',
+      description: 'Lead approval workspace',
       path: '/review',
       icon: ClipboardCheck,
       countBadge: stats.pendingCount ? `${stats.pendingCount} pending` : 'Reviewed',
-      badgeColor: stats.pendingCount ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : undefined,
+      badgeColor: stats.pendingCount ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200',
     },
     {
       step: 6,
@@ -102,20 +103,20 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
       path: '/handover',
       icon: Send,
       countBadge: currentCase?.status === 'published' ? `v${currentCase.currentVersion || 1}` : 'Draft',
-      badgeColor: currentCase?.status === 'published' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : undefined,
+      badgeColor: currentCase?.status === 'published' ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200' : undefined,
     },
   ];
 
   const navigationBody = (
-    <div className="flex flex-col justify-between h-full">
-      <div className="p-4 space-y-6">
+    <div className="flex min-h-full flex-col">
+      <div className="space-y-6 p-4">
         {/* Core Stepper Header */}
         <div>
           <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">
             5-Step Transfer Workflow
           </div>
 
-          <nav className="space-y-1">
+          <nav className="relative space-y-1">
             {steps.map((st) => {
               const Icon = st.icon;
               const isActive = location.pathname === st.path;
@@ -125,37 +126,40 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
                   key={st.id}
                   to={st.path}
                   onClick={() => handleStepClick(st.step)}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl text-xs transition-all ${
+                  className={`group flex min-h-[58px] min-w-0 items-center gap-2 rounded-xl border p-2.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-navy-900 ${
                     isActive
-                      ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-900 dark:text-teal-200 font-semibold shadow-sm border border-teal-200 dark:border-teal-800'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                      ? 'border-teal-300 bg-teal-100/80 font-semibold text-teal-900 shadow-sm dark:border-teal-700 dark:bg-teal-950/70 dark:text-teal-100'
+                      : 'border-transparent text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
                     <div
                       className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
                         isActive
                           ? 'bg-teal-600 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-teal-600'
+                          : 'bg-slate-100 text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700 dark:bg-slate-800 dark:text-slate-300 dark:group-hover:bg-teal-950/60 dark:group-hover:text-teal-300'
                       }`}
                     >
                       <Icon size={14} />
                     </div>
-                    <div className="truncate">
-                      <div className="leading-tight truncate">{st.title}</div>
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-normal truncate">
+                    <div className="min-w-0 flex-1 whitespace-normal break-words">
+                      <div className="leading-tight">{st.title}</div>
+                      <div
+                        title={st.description}
+                        className="text-[10px] font-normal leading-snug text-slate-600 dark:text-slate-300"
+                      >
                         {st.description}
                       </div>
                     </div>
                   </div>
 
                   <span
-                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ml-1 ${
+                    className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold leading-4 ${
                       st.badgeColor
                         ? st.badgeColor
                         : isActive
                         ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
                     }`}
                   >
                     {st.countBadge}
@@ -167,70 +171,72 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
         </div>
 
         {/* Secondary Links: Audit, Limitations, Cases */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1">
-          <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-2">
+        <div className="space-y-1 border-t border-slate-200 pt-5 dark:border-slate-700">
+          <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Governance & Specs
           </div>
 
           <Link
             to="/audit"
             onClick={() => { if (onClose) onClose(); }}
-            className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
+            className={`group flex min-h-10 items-center justify-between rounded-lg border border-transparent p-2 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-navy-900 ${
               location.pathname === '/audit'
-                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'bg-teal-50 font-medium text-teal-900 dark:bg-teal-950/50 dark:text-teal-100'
+                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white'
             }`}
           >
             <div className="flex items-center space-x-2">
-              <History size={14} className="text-slate-400" />
+              <History size={14} className="text-slate-500 dark:text-slate-400" />
               <span>Audit Trail & Diff</span>
             </div>
-            <ChevronRight size={12} className="text-slate-400" />
+            <ChevronRight size={12} className="text-slate-500 transition-transform duration-150 group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 dark:text-slate-400" />
           </Link>
 
           <Link
             to="/limitations"
             onClick={() => { if (onClose) onClose(); }}
-            className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
+            className={`group flex min-h-10 items-center justify-between rounded-lg border border-transparent p-2 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-navy-900 ${
               location.pathname === '/limitations'
-                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'bg-teal-50 font-medium text-teal-900 dark:bg-teal-950/50 dark:text-teal-100'
+                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white'
             }`}
           >
             <div className="flex items-center space-x-2">
-              <Info size={14} className="text-slate-400" />
+              <Info size={14} className="text-slate-500 dark:text-slate-400" />
               <span>Honest Limitations</span>
             </div>
-            <ChevronRight size={12} className="text-slate-400" />
+            <ChevronRight size={12} className="text-slate-500 transition-transform duration-150 group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 dark:text-slate-400" />
           </Link>
 
           <Link
             to="/cases"
             onClick={() => { if (onClose) onClose(); }}
-            className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
+            className={`group flex min-h-10 items-center justify-between rounded-lg border border-transparent p-2 text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-navy-900 ${
               location.pathname === '/cases'
-                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'bg-teal-50 font-medium text-teal-900 dark:bg-teal-950/50 dark:text-teal-100'
+                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white'
             }`}
           >
             <div className="flex items-center space-x-2">
-              <Layers size={14} className="text-slate-400" />
+              <Layers size={14} className="text-slate-500 dark:text-slate-400" />
               <span>All Cases Dashboard</span>
             </div>
-            <ChevronRight size={12} className="text-slate-400" />
+            <ChevronRight size={12} className="text-slate-500 transition-transform duration-150 group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5 dark:text-slate-400" />
           </Link>
         </div>
       </div>
 
       {/* Footer Role Notice */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-navy-950/40">
-        <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400">
-          <Shield size={12} className="text-teal-600" />
-          <span>Role-Gated Server ACL</span>
+      <div className="mt-auto p-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-navy-950/60">
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+            <Shield size={14} className="shrink-0 text-teal-700 dark:text-teal-400" />
+            <span>Role-Gated Server ACL</span>
+          </div>
+          <p className="mt-1 text-[10px] leading-relaxed text-slate-600 dark:text-slate-300">
+            Server filters restricted content before building responses. Zero client leaks.
+          </p>
         </div>
-        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-          Server filters restricted content before building responses. Zero client leaks.
-        </p>
       </div>
     </div>
   );
@@ -238,7 +244,7 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
   return (
     <>
       {/* Desktop Persistent Sidebar */}
-      <aside className="hidden md:flex w-64 flex-shrink-0 bg-white dark:bg-navy-900 border-r border-slate-200 dark:border-slate-800 flex-col justify-between min-h-[calc(100vh-4rem)]">
+      <aside className="glass-strong hidden h-full min-h-0 w-64 min-w-0 flex-shrink-0 flex-col md:flex">
         {navigationBody}
       </aside>
 
@@ -246,11 +252,11 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-slate-900/60 transition-opacity"
             onClick={onClose}
             aria-hidden="true"
           />
-          <aside className="relative w-72 max-w-[85vw] bg-white dark:bg-navy-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+          <aside className="glass-strong relative z-10 flex h-full w-72 min-w-0 max-w-[85vw] flex-col overflow-hidden animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
               <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Workflow Steps
@@ -258,7 +264,7 @@ export const SidebarStepper: React.FC<SidebarStepperProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="rounded-md p-1 text-slate-500 transition-colors duration-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 dark:text-slate-400 dark:hover:text-slate-200 dark:focus-visible:ring-offset-navy-900"
                 aria-label="Close menu"
               >
                 <X size={18} />

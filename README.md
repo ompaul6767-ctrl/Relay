@@ -10,6 +10,7 @@
 ### 🌐 Live Production Deployments & Access
 - **Live Web Application (Vercel):** [https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/)
 - **Dedicated Login & Judge Portal:** [https://client-cxv9.vercel.app/login](https://client-cxv9.vercel.app/login) (One-click judge credentials: `demo@techforce.dev` / `Demo@1234`)
+- **Engineering Workflow Guide:** [docs/WORKFLOW-GUIDE.md](docs/WORKFLOW-GUIDE.md) (Complete operational walkthrough & troubleshooting)
 - **Live Backend API (Render):** [https://relay-ygyb.onrender.com](https://relay-ygyb.onrender.com)
 - **API Health Check:** [https://relay-ygyb.onrender.com/api/health](https://relay-ygyb.onrender.com/api/health)
 - **Public GitHub Repository:** [https://github.com/ompaul6767-ctrl/Relay](https://github.com/ompaul6767-ctrl/Relay)
@@ -339,6 +340,7 @@ To enable native Tier 1 Atlas Vector Search on your MongoDB Atlas cluster:
 
 ## 12. Documentation Index (`docs/`)
 
+- [docs/WORKFLOW-GUIDE.md](docs/WORKFLOW-GUIDE.md): End-to-end operational engineering guide, team adoption cadence, Q&A approval gate walkthrough, and troubleshooting FAQ.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): Component diagrams, end-to-end data flow, Mongoose data models, permission boundary enforcement, and deployment topology.
 - [docs/FEATURES.md](docs/FEATURES.md): Exhaustive feature status matrix marking every feature Working, Partial, or Planned.
 - [docs/ROUND3-CHANGES.md](docs/ROUND3-CHANGES.md): Detailed report for each of the three Round 3 improvements (committed vs delivered, UI locations, test evidence).

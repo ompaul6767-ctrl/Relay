@@ -214,12 +214,12 @@ Open **[http://localhost:5173](http://localhost:5173)** in your browser.
 ## 7. How to Run Tests, Evaluation & Smoke Runner
 
 ### 1. Unit & Security Test Suite (Vitest)
-Executes 37 tests across 8 test suites sequentially:
+Executes 45 tests across 9 test suites sequentially:
 ```bash
 cd server
 npm test
 ```
-**Results:** **8 of 8 test files passed (37 of 37 tests passed)** with 0 failures.
+**Results:** **9 of 9 test files passed (45 of 45 tests passed)** with 0 failures (`auth.test.js`, `github.test.js`, `vectorSearch.test.js`, `timeline.test.js`, `security.test.js`, `interview.test.js`, `verification.test.js`, `parsers.test.js`, `quoteValidator.test.js`).
 
 ### 2. Automated Ground-Truth Evaluation Harness
 Executes 10 automated benchmarks against ground-truth files (`seed/answer-key.json` and `seed/qa-evaluation-set.json`):
@@ -239,21 +239,23 @@ node server/scripts/smoke.js https://relay-ygyb.onrender.com
 
 ---
 
-## 8. Demo Accounts & Seed Project
+## 8. Demo Accounts & Judge Quick Access
 
-Relay features an on-page **"Demo accounts"** card with visible credentials and 1-click persona switching:
+Relay includes pre-seeded demo accounts with bcrypt password hashing and a one-click quick login card at **[`/login`](https://client-cxv9.vercel.app/login)**:
 
 | Persona | Demo Email | Password | Role & Scope |
 |---|---|---|---|
-| **Engineering Lead** | `lead@relay.demo` | `relay2026!` | Full administrative authority. Approves/rejects claims, resolves conflicts, dismisses staleness, publishes handovers, views full dossier and audit logs. |
-| **Departing Member** | `departing@relay.demo` | `relay2026!` | Author of original tasks and code. Answers targeted leaver interview questions to capture unwritten reasoning into Attested claims. |
-| **Incoming Developer** | `incoming_dev@relay.demo` | `relay2026!` | Receives technical decisions, runbooks, deploy scripts, and Day 1 / Week 1 / Day 30 milestones. Confidential notes rendered as stubs (`isRestrictedStub: true`). Asks Q&A questions. |
-| **Incoming Designer** | `incoming_designer@relay.demo` | `relay2026!` | Receives design system tokens, Figma assets, and UI component contacts. |
+| **Judge / Reviewer (Tech Force)** | `demo@techforce.dev` | `Demo@1234` | **Platform Administrator & Lead Reviewer:** Has full access (`owner_only`, `leads_only`, `team`). 1-Click quick access button on the login screen. |
+| **Engineering Lead (Maya)** | `lead@relay.demo` | `relay2026!` | Full administrative authority. Approves/rejects claims, resolves conflicts, dismisses staleness, publishes handovers, views full dossier and audit logs. |
+| **Departing Member (Devon)** | `departing@relay.demo` | `relay2026!` | Author of original tasks and code. Answers targeted leaver interview questions (`/interview`) to capture unwritten reasoning into Attested claims. |
+| **Incoming Developer (Dana)** | `incoming_dev@relay.demo` | `relay2026!` | Receives technical decisions, runbooks, deploy scripts, and Day 1 / Week 1 / Day 30 milestones. Confidential notes rendered as stubs (`isRestrictedStub: true`). Asks Q&A questions. |
+| **Incoming Designer (Rohan)** | `incoming_designer@relay.demo` | `relay2026!` | Receives design system tokens, Figma assets, and UI component contacts. |
 
 ### Loading the Demo Project
-1. Open the app: **[https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/)**.
-2. Click **"Load Demo Project"** on the landing page or top bar.
-3. Ingests 7 synthetic sources for **"Campus Event Portal"** with departing engineer **Aarav** and executes the extraction and verification pipeline.
+1. Open the app: **[https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/)** or sign in at **[https://client-cxv9.vercel.app/login](https://client-cxv9.vercel.app/login)**.
+2. Click **"One-Click Judge Login (demo@techforce.dev)"** to authenticate.
+3. Click **"Load Demo Project"** on the landing page or `/cases`.
+4. Ingests 7 synthetic sources for **"Campus Event Portal"** with departing engineer **Aarav** and initializes the extraction and verification pipeline.
 
 ---
 
@@ -262,33 +264,37 @@ Relay features an on-page **"Demo accounts"** card with visible credentials and 
 Follow these steps to evaluate Relay from a fresh browser state:
 
 1. **Sign In & Load Demo:**
-   - Open [https://client-cxv9.vercel.app/](https://client-cxv9.vercel.app/).
-   - Click **"Sign in as Maya (Lead)"** on the Demo Accounts card.
-   - Click **"Load Demo Project"**.
+   - Open [https://client-cxv9.vercel.app/login](https://client-cxv9.vercel.app/login).
+   - Click **"One-Click Judge Login (demo@techforce.dev)"** on the Quick Access card.
+   - Go to Cases and click **"Load Demo Project"**.
 2. **Inspect Sources (Connect):**
    - View the 7 ingested source cards with ACL badges (`team`, `leads_only`).
    - Click the **"Import from GitHub"** tab, click **"Use Demo Repo (Relay)"**, check consent, and click **"Import Repository"**.
-3. **Reconstruct & Verify:**
-   - In Reconstruct, inspect the extracted atomic claims, confidence scores, and status chips (`Verified`, `Conflicting`, `Missing`, `Inferred`).
-   - Notice the AI resilience banner stating the active extractor.
+3. **Reconstruct & Verify Claims:**
+   - In Reconstruct, click **"Reconstruct & Verify"**. Inspect the extracted atomic claims, confidence scores, and status chips (`Verified`, `Conflicting`, `Missing`, `Inferred`).
+   - Notice the AI resilience banner stating the active extractor (Gemini or rule-based fallback).
 4. **Test Deterministic Citation Invariant:**
    - In Review, click **"Test Citation Check"**. Submit a fabricated quote and observe deterministic code-level rejection (`citation failed`).
 5. **Interview Departing Member (Improvement 1):**
    - Switch persona to **Departing Member** (top-bar picker).
-   - Click **"Interview"** in the navigation. Answer the gap questions and conflict question (select "Aarav" or "Priya" with rationale) and submit.
-   - Switch back to **Lead**, open **Review**, and observe the new claim tagged *"From leaver interview"*. Click **Approve**.
+   - Click **"Interview"** in navigation (`/interview`). Answer the gap questions and conflict question (select "Aarav" or "Priya" with rationale) and submit.
+   - Switch back to **Lead**, open **Review**, and observe the new claim tagged *"From leaver interview"*.
 6. **Conflict Timeline & Staleness (Improvement 3):**
-   - Click **"Timeline"** in the navigation.
+   - Click **"Timeline"** in navigation (`/timeline`).
    - Inspect the chronological feed, filter by "Conflicts", and inspect the side-by-side cards with the **"Newer Source"** badge.
    - Observe the superseded claim flag for the MongoDB Atlas $\to$ PostgreSQL reversal.
-   - In Review, dismiss the staleness flag with rationale or resolve the conflict. Click **"Publish Handover Plan"**.
-7. **Developer View & Q&A Assistant (Improvement 2):**
+7. **Lead Approval & Publishing (Crucial for Q&A Searchability):**
+   - In **Review (`/review`)**, click **"Bulk Approve Verified"** (or press shortcut <kbd>A</kbd> on individual claims).
+   - Resolve the conflict or dismiss staleness with a recorded rationale.
+   - Click the green **"Publish Handover Plan"** button to seal the version snapshot.
+   > **💡 Why the Approval Gate Matters for Q&A:** Relay enforces a strict security invariant: the Q&A Assistant answers **ONLY from APPROVED claims** published by the Lead. If claims are still pending review, the assistant correctly replies *"I could not find this in the approved handover."* Approving and publishing claims in Step 5 makes them available to the Q&A search engine!
+8. **Developer View & Cited Q&A Assistant (Improvement 2):**
    - Switch persona to **Incoming Developer**.
-   - In Handover, inspect technical runbooks, Day 1 / Week 1 / Day 30 milestones, and the **Restricted Stubs banner** ("3 restricted items").
-   - Scroll to **"Ask Relay Q&A Assistant"**. Ask: *"Why did we migrate the database?"*.
-   - Observe the grounded answer, the active retrieval mode badge (`Atlas Vector Search` or `Keyword`), and clickable citation pills that open the Evidence Drawer.
+   - In Handover (`/handover`), inspect technical runbooks, Day 1 / Week 1 / Day 30 milestones, and the **Restricted Stubs banner** ("3 restricted items exist").
+   - Scroll to **"Ask Relay Q&A Assistant"**. Ask: *"how is deployment handled"* or *"Why did we migrate the database?"*.
+   - Observe the grounded answer, the active retrieval mode badge (`Atlas Vector Search`, `In-app similarity`, or `Keyword`), and clickable citation pills that open the Evidence Drawer.
    - Click **"Formal Acknowledgement of Receipt"** and submit sign-off.
-8. **Audit Trail & Diff:**
+9. **Audit Trail & Diff:**
    - Open `/audit` to verify the tamper-evident log and published version diffs.
 
 ---
